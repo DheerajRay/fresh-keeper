@@ -1,0 +1,7 @@
+{
+  "name": "FreshKeeper: Smart Fridge Guide",
+  "description": "An interactive, visual guide to fridge organization, food safety, and spoilage prevention powered by AI.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
