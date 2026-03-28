@@ -4,6 +4,11 @@ All notable changes to this project should be documented in this file.
 
 This project starts versioning with Semantic Versioning.
 
+## [0.2.6] - 2026-03-27
+
+- Inlined the OpenAI AI handler logic directly into `api/ai.ts` so the deployed Vercel function no longer depends on a secondary runtime import.
+- Added a favicon link to the app shell to remove the browser favicon 404.
+
 ## [0.2.5] - 2026-03-27
 
 - Removed the top-level OpenAI helper import from the Vercel route.
