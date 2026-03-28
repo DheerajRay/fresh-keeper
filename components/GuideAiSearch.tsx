@@ -1,67 +1,78 @@
-import React, { useState } from 'react';
-import { Search, Loader2, Sparkles } from 'lucide-react';
-import { askFridgeAI } from '../services/openai';
-import { ChatMessage } from '../types';
+import React, { useMemo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import { Loader2, Search } from 'lucide-react';
+import { askFridgeAI } from '../services/openai';
+import { Panel, PrimaryButton, SectionHeader, SecondaryButton } from './ui';
 
 const GuideAiSearch: React.FC = () => {
   const [query, setQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [result, setResult] = useState<ChatMessage | null>(null);
+  const [answer, setAnswer] = useState('');
+  const [expanded, setExpanded] = useState(false);
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const canCollapse = useMemo(() => answer.length > 260, [answer]);
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     if (!query.trim()) return;
 
     setIsLoading(true);
-    setResult(null);
-
-    const answer = await askFridgeAI(query);
-
-    setResult({
-      role: 'model',
-      text: answer,
-    });
+    setExpanded(false);
+    const result = await askFridgeAI(query);
+    setAnswer(result);
     setIsLoading(false);
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto mb-10">
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-6 shadow-lg text-white">
-        <h3 className="text-xl font-bold mb-2 flex items-center gap-2">
-          <Sparkles className="text-yellow-300" />
-          Ask the FreshKeeper AI
-        </h3>
-        <p className="text-blue-100 mb-4 text-sm">
-          Not sure where something goes? Ask specific questions like "Where do I put avocados?" or "How long does cooked chicken last?"
-        </p>
+    <Panel className="p-5 md:p-6">
+      <SectionHeader
+        title="Ask storage guidance"
+        description="Use the guide like a handbook. Ask one food-storage or shelf-life question at a time."
+      />
 
-        <form onSubmit={handleSearch} className="relative">
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="e.g., 'How to store fresh basil?'"
-            className="w-full py-3 px-5 pr-12 rounded-xl bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-white/50 shadow-inner"
-          />
-          <button
-            type="submit"
-            disabled={isLoading || !query.trim()}
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-blue-500 hover:bg-blue-600 disabled:bg-slate-300 rounded-lg transition-colors text-white"
-          >
-            {isLoading ? <Loader2 className="animate-spin" size={20} /> : <Search size={20} />}
-          </button>
-        </form>
+      <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+        <label className="block">
+          <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">
+            Question
+          </span>
+          <div className="flex flex-col gap-3 md:flex-row">
+            <input
+              type="text"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="e.g. How should I store fresh basil?"
+              className="min-h-[52px] flex-1 rounded-2xl border border-neutral-200 bg-neutral-50 px-4 text-sm text-neutral-900 outline-none transition focus:border-neutral-950"
+            />
+            <PrimaryButton type="submit" disabled={isLoading || !query.trim()} aria-label="Ask FreshKeeper AI">
+              {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Search size={18} />}
+              {isLoading ? 'Checking' : 'Ask'}
+            </PrimaryButton>
+          </div>
+        </label>
+      </form>
 
-        {result && (
-          <div className="mt-4 bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20 animate-fade-in">
-            <div className="prose prose-invert prose-sm max-w-none">
-              <ReactMarkdown>{result.text}</ReactMarkdown>
+      {answer ? (
+        <div className="mt-5 rounded-3xl border border-neutral-200 bg-neutral-50 p-4">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-neutral-500">Answer</p>
+          <div className={canCollapse && !expanded ? 'max-h-40 overflow-hidden' : ''}>
+            <div className="prose prose-neutral mt-3 max-w-none text-sm leading-6">
+              <ReactMarkdown>{answer}</ReactMarkdown>
             </div>
           </div>
-        )}
-      </div>
-    </div>
+          {canCollapse ? (
+            <div className="mt-3">
+              <SecondaryButton
+                type="button"
+                onClick={() => setExpanded((current) => !current)}
+                aria-expanded={expanded}
+              >
+                {expanded ? 'Show less' : 'Show more'}
+              </SecondaryButton>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+    </Panel>
   );
 };
 

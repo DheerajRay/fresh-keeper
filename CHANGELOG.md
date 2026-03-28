@@ -4,6 +4,16 @@ All notable changes to this project should be documented in this file.
 
 This project starts versioning with Semantic Versioning.
 
+## [0.3.0] - 2026-03-28
+
+- Rebuilt the shell into a monochrome command-center layout with tighter page headers, calmer navigation, and a simplified guide experience.
+- Added shared UI primitives for headers, stat strips, segmented controls, sheets, dialogs, and empty states so all tabs use the same interaction model.
+- Refactored inventory into a list-first workflow with a single add flow, secondary zone map, and detail sheet actions.
+- Refactored meal planning into explicit `Plan` and `Discover` modes with a visible `Needs Ingredients` queue and simplified save/move flows.
+- Refactored shopping into a vertical list-first workflow with suggestion intake, lightweight store filters, and secondary store management.
+- Restyled guide search, zone detail, spoilage reference, fridge map, and global surfaces into a grayscale system.
+- Added inventory tests for add/remove and scan-to-confirm, and updated tab tests to match the new workflows.
+
 ## [0.2.8] - 2026-03-28
 
 - Renamed the remaining live Gemini UI references to neutral FreshKeeper/OpenAI naming, including the guide AI component.

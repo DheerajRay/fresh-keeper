@@ -24,20 +24,17 @@ export const UNIT_OPTIONS = [
 ];
 
 export const SHOP_COLORS = [
-  { label: 'Blue', value: 'blue', bg: 'bg-blue-100', text: 'text-blue-700', border: 'border-blue-200', ring: 'ring-blue-500' },
-  { label: 'Red', value: 'red', bg: 'bg-red-100', text: 'text-red-700', border: 'border-red-200', ring: 'ring-red-500' },
-  { label: 'Green', value: 'green', bg: 'bg-green-100', text: 'text-green-700', border: 'border-green-200', ring: 'ring-green-500' },
-  { label: 'Amber', value: 'amber', bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-200', ring: 'ring-amber-500' },
-  { label: 'Purple', value: 'purple', bg: 'bg-purple-100', text: 'text-purple-700', border: 'border-purple-200', ring: 'ring-purple-500' },
-  { label: 'Pink', value: 'pink', bg: 'bg-pink-100', text: 'text-pink-700', border: 'border-pink-200', ring: 'ring-pink-500' },
-  { label: 'Slate', value: 'slate', bg: 'bg-slate-100', text: 'text-slate-700', border: 'border-slate-200', ring: 'ring-slate-500' },
-  { label: 'Indigo', value: 'indigo', bg: 'bg-indigo-100', text: 'text-indigo-700', border: 'border-indigo-200', ring: 'ring-indigo-500' },
+  { label: 'Slate', value: 'slate', bg: 'bg-slate-100', text: 'text-slate-700', border: 'border-slate-300', ring: 'ring-slate-500' },
+  { label: 'Stone', value: 'stone', bg: 'bg-stone-100', text: 'text-stone-700', border: 'border-stone-300', ring: 'ring-stone-500' },
+  { label: 'Zinc', value: 'zinc', bg: 'bg-zinc-100', text: 'text-zinc-700', border: 'border-zinc-300', ring: 'ring-zinc-500' },
+  { label: 'Neutral', value: 'neutral', bg: 'bg-neutral-100', text: 'text-neutral-700', border: 'border-neutral-300', ring: 'ring-neutral-500' },
+  { label: 'Gray', value: 'gray', bg: 'bg-gray-100', text: 'text-gray-700', border: 'border-gray-300', ring: 'ring-gray-500' },
 ];
 
 export const DEFAULT_SHOPS: Shop[] = [
-  { id: 'shop_default_1', name: 'Grocery Store', color: 'blue' },
-  { id: 'shop_default_2', name: 'Costco / Bulk', color: 'red' },
-  { id: 'shop_default_3', name: 'Farmer\'s Market', color: 'green' }
+  { id: 'shop_default_1', name: 'Grocery Store', color: 'slate' },
+  { id: 'shop_default_2', name: 'Costco / Bulk', color: 'stone' },
+  { id: 'shop_default_3', name: 'Farmer\'s Market', color: 'zinc' }
 ];
 
 export const DIETARY_OPTIONS: { value: string, label: string }[] = [

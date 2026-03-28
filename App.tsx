@@ -1,229 +1,229 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import { BookOpen, ChefHat, Grid2X2, Menu, Refrigerator, ShoppingCart } from 'lucide-react';
 import FridgeVisual from './components/FridgeVisual';
-import ZoneDetail from './components/ZoneDetail';
-import SpoilageSection from './components/SpoilageSection';
 import GuideAiSearch from './components/GuideAiSearch';
 import InventoryManager from './components/InventoryManager';
-import ShoppingListManager from './components/ShoppingListManager';
 import MealPlanner from './components/MealPlanner';
+import ShoppingListManager from './components/ShoppingListManager';
+import SpoilageSection from './components/SpoilageSection';
+import ZoneDetail from './components/ZoneDetail';
 import { FRIDGE_ZONES } from './constants';
 import { ZoneId } from './types';
-import { Snowflake, BookOpen, Refrigerator, X, ShoppingCart, ChefHat } from 'lucide-react';
+import {
+  EmptyState,
+  PageHeader,
+  Panel,
+  PrimaryButton,
+  SecondaryButton,
+  SectionHeader,
+  SurfaceSheet,
+  cx,
+} from './components/ui';
+
+type AppView = 'inventory' | 'meals' | 'shopping' | 'guide';
 
 const App: React.FC = () => {
+  const [currentView, setCurrentView] = useState<AppView>('inventory');
   const [selectedZone, setSelectedZone] = useState<ZoneId>(ZoneId.LOWER_SHELVES);
-  const [currentView, setCurrentView] = useState<'guide' | 'inventory' | 'shopping' | 'meals'>('inventory');
-  const [showMobileDetail, setShowMobileDetail] = useState(false);
+  const [showGuideMap, setShowGuideMap] = useState(false);
 
-  const navItems: Array<{
-    view: 'inventory' | 'meals' | 'shopping' | 'guide';
-    label: string;
-    shortLabel: string;
-    icon: React.ReactNode;
-  }> = [
-    {
-      view: 'inventory',
-      label: 'My Fridge',
-      shortLabel: 'Fridge',
-      icon: <Refrigerator size={16} />,
-    },
-    {
-      view: 'meals',
-      label: 'Meal Plan',
-      shortLabel: 'Meals',
-      icon: <ChefHat size={16} />,
-    },
-    {
-      view: 'shopping',
-      label: 'Shopping List',
-      shortLabel: 'Shop',
-      icon: <ShoppingCart size={16} />,
-    },
-    {
-      view: 'guide',
-      label: 'Guide & Tips',
-      shortLabel: 'Guide',
-      icon: <BookOpen size={16} />,
-    },
-  ];
+  const navItems = useMemo(
+    () => [
+      { view: 'inventory' as const, label: 'My Fridge', shortLabel: 'Fridge', icon: Refrigerator },
+      { view: 'meals' as const, label: 'Meal Plan', shortLabel: 'Meals', icon: ChefHat },
+      { view: 'shopping' as const, label: 'Shopping List', shortLabel: 'Shop', icon: ShoppingCart },
+      { view: 'guide' as const, label: 'Guide & Tips', shortLabel: 'Guide', icon: BookOpen },
+    ],
+    [],
+  );
 
-  const handleZoneSelect = (zone: ZoneId) => {
-    setSelectedZone(zone);
-    setShowMobileDetail(true);
-  };
+  const guideZoneList = Object.values(FRIDGE_ZONES);
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-28 md:pb-20">
-      {/* Header */}
-      <header className="bg-white/95 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-3 md:py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-blue-600">
-              <div className="bg-blue-600 text-white p-2 rounded-lg shadow-sm">
-                <Snowflake size={20} />
-              </div>
-              <div className="flex flex-col leading-none">
-                <span className="text-lg md:text-xl font-bold tracking-tight text-slate-900">FreshKeeper</span>
-                <span className="hidden sm:block text-xs text-slate-500 mt-1">Smart kitchen freshness planner</span>
-              </div>
+    <div className="min-h-screen bg-[#f5f5f3] text-neutral-950">
+      <header className="sticky top-0 z-50 border-b border-neutral-200 bg-white/90 backdrop-blur">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 md:px-6">
+          <div className="flex items-center gap-3">
+            <div className="rounded-2xl border border-neutral-200 bg-neutral-950 p-2.5 text-white">
+              <Grid2X2 size={18} />
             </div>
-            
-            {/* Desktop Nav */}
-            <nav className="hidden md:flex bg-slate-100 p-1 rounded-lg">
-              {navItems.map((item) => (
-                <button 
+            <div>
+              <p className="text-xl font-semibold tracking-tight">FreshKeeper</p>
+              <p className="hidden text-xs uppercase tracking-[0.2em] text-neutral-500 sm:block">
+                kitchen operating system
+              </p>
+            </div>
+          </div>
+
+          <nav className="hidden rounded-2xl border border-neutral-200 bg-neutral-100 p-1 md:flex">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = currentView === item.view;
+              return (
+                <button
                   key={item.view}
+                  type="button"
                   onClick={() => setCurrentView(item.view)}
-                  className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
-                    currentView === item.view ? 'bg-white shadow text-blue-600' : 'text-slate-500 hover:text-slate-700'
-                  }`}
+                  className={cx(
+                    'flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-medium transition',
+                    isActive ? 'bg-neutral-950 text-white' : 'text-neutral-600 hover:text-neutral-950',
+                  )}
                 >
+                  <Icon size={15} />
                   {item.label}
                 </button>
-              ))}
-            </nav>
+              );
+            })}
+          </nav>
+
+          <div className="md:hidden">
+            <button
+              type="button"
+              className="rounded-2xl border border-neutral-200 bg-neutral-50 p-2 text-neutral-700"
+              aria-label="Navigation menu"
+            >
+              <Menu size={18} />
+            </button>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-5 md:py-8 space-y-6 md:space-y-8">
-        
-        {/* Mobile View Label */}
-        <div className="md:hidden flex items-center justify-between text-[11px] uppercase tracking-[0.18em] text-slate-400 font-bold px-1">
-          <span>{navItems.find((item) => item.view === currentView)?.label}</span>
-          <span>FreshKeeper</span>
-        </div>
-
-        {currentView === 'guide' && (
-          <div className="space-y-10 md:space-y-16 animate-fade-in">
-             {/* Intro */}
-            <section className="text-center max-w-2xl mx-auto space-y-3 md:space-y-4 px-2">
-              <h1 className="text-2xl md:text-5xl font-bold text-slate-900 leading-tight">
-                Master Your Fridge,<br />
-                <span className="text-blue-600">Stop the Spoilage.</span>
-              </h1>
-              <p className="text-sm md:text-lg text-slate-600">
-                Improper storage accelerates bacterial growth. 
-                Use this guide to keep food fresh, safe, and delicious.
-              </p>
-            </section>
+      <main className="mx-auto max-w-7xl px-4 pb-28 pt-6 md:px-6 md:pb-12 md:pt-8">
+        {currentView === 'inventory' ? <InventoryManager /> : null}
+        {currentView === 'meals' ? <MealPlanner /> : null}
+        {currentView === 'shopping' ? <ShoppingListManager /> : null}
+        {currentView === 'guide' ? (
+          <div className="space-y-8">
+            <PageHeader
+              eyebrow="Reference"
+              title="Guide and storage tips"
+              description="Search storage guidance, review zone rules, and use the fridge map only when you need a visual check."
+              action={
+                <SecondaryButton type="button" onClick={() => setShowGuideMap(true)}>
+                  Open storage map
+                </SecondaryButton>
+              }
+            />
 
             <GuideAiSearch />
 
-            <section id="visual-guide" className="scroll-mt-24">
-              <div className="flex items-center gap-4 mb-8">
-                <h2 className="text-2xl font-bold text-slate-800">Interactive Fridge Map</h2>
-                <div className="h-px flex-1 bg-slate-200"></div>
-              </div>
-              
-              <div className="grid lg:grid-cols-12 gap-8 items-start">
-                <div className="lg:col-span-5 xl:col-span-4 sticky top-24 z-10">
-                  <FridgeVisual 
-                    selectedZone={selectedZone} 
-                    onZoneSelect={handleZoneSelect} 
-                  />
+            <div className="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
+              <Panel className="p-4 md:p-5">
+                <SectionHeader
+                  title="Storage zones"
+                  description="Select a zone to inspect what belongs there and what to watch for."
+                />
+                <div className="mt-4 space-y-2">
+                  {guideZoneList.map((zone) => (
+                    <button
+                      key={zone.id}
+                      type="button"
+                      onClick={() => setSelectedZone(zone.id)}
+                      className={cx(
+                        'flex w-full items-start justify-between rounded-2xl border px-4 py-3 text-left transition',
+                        selectedZone === zone.id
+                          ? 'border-neutral-950 bg-neutral-950 text-white'
+                          : 'border-neutral-200 bg-neutral-50 text-neutral-700 hover:border-neutral-400',
+                      )}
+                    >
+                      <span>
+                        <span className="block text-sm font-semibold">{zone.name}</span>
+                        <span
+                          className={cx(
+                            'mt-1 block text-xs',
+                            selectedZone === zone.id ? 'text-neutral-300' : 'text-neutral-500',
+                          )}
+                        >
+                          {zone.temperature}
+                        </span>
+                      </span>
+                      <span
+                        className={cx(
+                          'text-[11px] uppercase tracking-[0.16em]',
+                          selectedZone === zone.id ? 'text-neutral-400' : 'text-neutral-400',
+                        )}
+                      >
+                        {zone.spoilageRisk}
+                      </span>
+                    </button>
+                  ))}
                 </div>
-                <section className="lg:hidden">
-                  <ZoneDetail data={FRIDGE_ZONES[selectedZone]} />
-                </section>
-                <section className="hidden lg:block lg:col-span-7 xl:col-span-8">
-                  <ZoneDetail data={FRIDGE_ZONES[selectedZone]} />
-                </section>
-              </div>
-            </section>
+              </Panel>
 
-            {showMobileDetail && (
-              <div 
-                className="lg:hidden fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in"
-                onClick={(e) => {
-                  if (e.target === e.currentTarget) setShowMobileDetail(false);
-                }}
-              >
-                <div className="w-full max-w-md relative animate-scale-in">
-                   <button 
-                     onClick={() => setShowMobileDetail(false)}
-                     className="absolute -top-3 -right-3 z-20 p-2 bg-white rounded-full shadow-md text-slate-500 hover:text-red-500 transition-colors border border-slate-100"
-                   >
-                     <X size={20} />
-                   </button>
-                   <div className="max-h-[80vh] overflow-y-auto rounded-2xl shadow-2xl custom-scrollbar">
-                      <ZoneDetail data={FRIDGE_ZONES[selectedZone]} />
-                   </div>
+              <div className="space-y-6">
+                <ZoneDetail data={FRIDGE_ZONES[selectedZone]} />
+
+                <details className="rounded-3xl border border-neutral-200 bg-white p-4 md:hidden">
+                  <summary className="cursor-pointer list-none text-sm font-semibold text-neutral-950">
+                    View storage map
+                  </summary>
+                  <div className="mt-4">
+                    <FridgeVisual selectedZone={selectedZone} onZoneSelect={setSelectedZone} />
+                  </div>
+                </details>
+
+                <div className="hidden md:block">
+                  <Panel className="p-5">
+                    <SectionHeader
+                      title="Optional visual map"
+                      description="Use the map if you want a quick mental model of cold versus dry storage."
+                    />
+                    <div className="mt-5">
+                      <FridgeVisual selectedZone={selectedZone} onZoneSelect={setSelectedZone} />
+                    </div>
+                  </Panel>
                 </div>
               </div>
-            )}
+            </div>
 
-            <section id="spoilage-facts" className="scroll-mt-24">
-               <div className="flex items-center gap-4 mb-8">
-                <h2 className="text-2xl font-bold text-slate-800">The Science of Spoilage</h2>
-                <div className="h-px flex-1 bg-slate-200"></div>
-              </div>
+            <div className="space-y-4">
+              <SectionHeader
+                title="Spoilage reference"
+                description="Keep this as the quick safety section: core spoilage mechanics and the signs that mean discard."
+              />
               <SpoilageSection />
-            </section>
+            </div>
           </div>
-        )}
-        
-        {currentView === 'inventory' && (
-          <div className="max-w-2xl mx-auto">
-             <div className="text-center mb-6 md:mb-8 px-2">
-                <h1 className="text-2xl md:text-3xl font-bold text-slate-900">My Fridge Inventory</h1>
-                <p className="text-sm md:text-base text-slate-500 mt-2">Track your groceries and let AI estimate expiration dates.</p>
-             </div>
-             <InventoryManager />
-          </div>
-        )}
-
-        {currentView === 'meals' && (
-          <div className="max-w-4xl mx-auto">
-             <div className="text-center mb-6 md:mb-8 px-2">
-                <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Smart Meal Prep Planner</h1>
-                <p className="text-sm md:text-base text-slate-500 mt-2">AI-curated recipes prioritizing ingredients expiring soon.</p>
-             </div>
-             <MealPlanner />
-          </div>
-        )}
-
-        {currentView === 'shopping' && (
-           <div className="max-w-5xl mx-auto">
-              <div className="text-center mb-6 md:mb-8 px-2">
-                <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Smart Shopping List</h1>
-                <p className="text-sm md:text-base text-slate-500 mt-2">Restock what you've used and discover what you're missing.</p>
-             </div>
-             <ShoppingListManager />
-           </div>
-        )}
-
+        ) : null}
       </main>
 
-      <footer className="bg-slate-900 text-slate-400 py-12 mt-20">
-        <div className="container mx-auto px-4 text-center">
-          <p className="mb-4 text-slate-300 font-medium">FreshKeeper &copy; {new Date().getFullYear()}</p>
-          <p className="text-sm max-w-xl mx-auto opacity-70 leading-relaxed">
-            Keep your kitchen organized by tracking items in the <strong>My Fridge</strong> tab. 
-            When you remove items, they populate suggestions in the <strong>Shopping List</strong> tab. 
-            Use the <strong>Guide & Tips</strong> tab to learn the best storage practices for longevity.
-          </p>
+      <footer className="border-t border-neutral-200 bg-white">
+        <div className="mx-auto max-w-7xl px-4 py-8 text-sm text-neutral-600 md:px-6">
+          FreshKeeper keeps inventory, meal planning, shopping, and storage guidance in one local workflow.
         </div>
       </footer>
 
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 border-t border-slate-200 bg-white/95 backdrop-blur-xl shadow-[0_-10px_30px_rgba(15,23,42,0.08)]">
-        <div className="grid grid-cols-4 gap-1 px-2 py-2">
-          {navItems.map((item) => (
-            <button
-              key={item.view}
-              onClick={() => setCurrentView(item.view)}
-              className={`flex flex-col items-center justify-center gap-1 rounded-2xl py-2.5 text-[11px] font-bold transition-all ${
-                currentView === item.view
-                  ? 'bg-blue-50 text-blue-600 shadow-sm'
-                  : 'text-slate-400 active:bg-slate-100'
-              }`}
-            >
-              {item.icon}
-              <span>{item.shortLabel}</span>
-            </button>
-          ))}
+      <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-neutral-200 bg-white/95 px-2 py-2 backdrop-blur md:hidden">
+        <div className="grid grid-cols-4 gap-1">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = currentView === item.view;
+            return (
+              <button
+                key={item.view}
+                type="button"
+                onClick={() => setCurrentView(item.view)}
+                className={cx(
+                  'flex flex-col items-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-semibold transition',
+                  isActive ? 'bg-neutral-950 text-white' : 'text-neutral-500',
+                )}
+              >
+                <Icon size={16} />
+                {item.shortLabel}
+              </button>
+            );
+          })}
         </div>
       </nav>
+
+      <SurfaceSheet
+        open={showGuideMap}
+        onClose={() => setShowGuideMap(false)}
+        title="Storage map"
+        description="Use the map for orientation only. The zone list remains the primary reference."
+      >
+        <FridgeVisual selectedZone={selectedZone} onZoneSelect={setSelectedZone} />
+      </SurfaceSheet>
     </div>
   );
 };
