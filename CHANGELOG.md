@@ -4,6 +4,11 @@ All notable changes to this project should be documented in this file.
 
 This project starts versioning with Semantic Versioning.
 
+## [0.2.4] - 2026-03-27
+
+- Reverted the Vercel AI route to the classic `req`/`res` serverless handler shape.
+- Added explicit route-level error handling and a GET health response inside the classic handler.
+
 ## [0.2.3] - 2026-03-27
 
 - Moved the shared OpenAI handler under `api/_lib` so Vercel bundles the function code from inside the API tree.
