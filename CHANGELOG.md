@@ -4,6 +4,12 @@ All notable changes to this project should be documented in this file.
 
 This project starts versioning with Semantic Versioning.
 
+## [0.2.1] - 2026-03-27
+
+- Switched the Vercel API entrypoint to a web-standard Request/Response handler.
+- Improved the mobile shell with a bottom tab bar, tighter spacing, and more compact mobile headers.
+- Added inline mobile guide details so the fridge zone information is easier to use on iPhone.
+
 ## [0.2.0] - 2026-03-27
 
 - Replaced the Gemini integration with an OpenAI-backed AI service layer.

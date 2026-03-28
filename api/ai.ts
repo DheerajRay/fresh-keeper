@@ -1,30 +1,23 @@
 import { handleAiRequest } from '../server/openai';
 
-async function readJsonBody(req: any): Promise<any> {
-  if (req.body && typeof req.body === 'object') {
-    return req.body;
-  }
+export const runtime = 'nodejs';
 
-  const chunks: Uint8Array[] = [];
-  for await (const chunk of req) {
-    chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
-  }
-
-  if (chunks.length === 0) {
+async function readJsonBody(request: Request): Promise<any> {
+  try {
+    return await request.json();
+  } catch (error) {
     return {};
   }
-
-  const raw = Buffer.concat(chunks).toString('utf8');
-  return raw ? JSON.parse(raw) : {};
 }
 
-export default async function handler(req: any, res: any) {
-  if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method not allowed.' });
-    return;
+export default {
+  async fetch(request: Request) {
+    if (request.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed.' }, { status: 405 });
+    }
+
+    const body = await readJsonBody(request);
+    const result = await handleAiRequest(body);
+    return Response.json(result.body, { status: result.status });
   }
-
-  const body = await readJsonBody(req);
-  const result = await handleAiRequest(body);
-  res.status(result.status).json(result.body);
-}
+};

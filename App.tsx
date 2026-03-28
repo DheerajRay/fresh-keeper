@@ -8,12 +8,44 @@ import ShoppingListManager from './components/ShoppingListManager';
 import MealPlanner from './components/MealPlanner';
 import { FRIDGE_ZONES } from './constants';
 import { ZoneId } from './types';
-import { Snowflake, BookOpen, Refrigerator, X, Info, ShoppingCart, ChefHat } from 'lucide-react';
+import { Snowflake, BookOpen, Refrigerator, X, ShoppingCart, ChefHat } from 'lucide-react';
 
 const App: React.FC = () => {
   const [selectedZone, setSelectedZone] = useState<ZoneId>(ZoneId.LOWER_SHELVES);
   const [currentView, setCurrentView] = useState<'guide' | 'inventory' | 'shopping' | 'meals'>('inventory');
   const [showMobileDetail, setShowMobileDetail] = useState(false);
+
+  const navItems: Array<{
+    view: 'inventory' | 'meals' | 'shopping' | 'guide';
+    label: string;
+    shortLabel: string;
+    icon: React.ReactNode;
+  }> = [
+    {
+      view: 'inventory',
+      label: 'My Fridge',
+      shortLabel: 'Fridge',
+      icon: <Refrigerator size={16} />,
+    },
+    {
+      view: 'meals',
+      label: 'Meal Plan',
+      shortLabel: 'Meals',
+      icon: <ChefHat size={16} />,
+    },
+    {
+      view: 'shopping',
+      label: 'Shopping List',
+      shortLabel: 'Shop',
+      icon: <ShoppingCart size={16} />,
+    },
+    {
+      view: 'guide',
+      label: 'Guide & Tips',
+      shortLabel: 'Guide',
+      icon: <BookOpen size={16} />,
+    },
+  ];
 
   const handleZoneSelect = (zone: ZoneId) => {
     setSelectedZone(zone);
@@ -21,108 +53,56 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-20">
+    <div className="min-h-screen bg-slate-50 pb-28 md:pb-20">
       {/* Header */}
       <header className="bg-white/95 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between mb-4 md:mb-0">
+        <div className="container mx-auto px-4 py-3 md:py-4">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-blue-600">
-              <div className="bg-blue-600 text-white p-2 rounded-lg">
-                <Snowflake size={24} />
+              <div className="bg-blue-600 text-white p-2 rounded-lg shadow-sm">
+                <Snowflake size={20} />
               </div>
-              <span className="text-xl font-bold tracking-tight text-slate-900">FreshKeeper</span>
+              <div className="flex flex-col leading-none">
+                <span className="text-lg md:text-xl font-bold tracking-tight text-slate-900">FreshKeeper</span>
+                <span className="hidden sm:block text-xs text-slate-500 mt-1">Smart kitchen freshness planner</span>
+              </div>
             </div>
             
             {/* Desktop Nav */}
             <nav className="hidden md:flex bg-slate-100 p-1 rounded-lg">
-              <button 
-                onClick={() => setCurrentView('inventory')}
-                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
-                  currentView === 'inventory' ? 'bg-white shadow text-blue-600' : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                My Fridge
-              </button>
-              <button 
-                onClick={() => setCurrentView('meals')}
-                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
-                  currentView === 'meals' ? 'bg-white shadow text-blue-600' : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                Meal Plan
-              </button>
-              <button 
-                onClick={() => setCurrentView('shopping')}
-                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
-                  currentView === 'shopping' ? 'bg-white shadow text-blue-600' : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                Shopping List
-              </button>
-              <button 
-                onClick={() => setCurrentView('guide')}
-                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
-                  currentView === 'guide' ? 'bg-white shadow text-blue-600' : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                Guide & Tips
-              </button>
+              {navItems.map((item) => (
+                <button 
+                  key={item.view}
+                  onClick={() => setCurrentView(item.view)}
+                  className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
+                    currentView === item.view ? 'bg-white shadow text-blue-600' : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
             </nav>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 space-y-8">
+      <main className="container mx-auto px-4 py-5 md:py-8 space-y-6 md:space-y-8">
         
-        {/* Mobile View Switcher */}
-        <div className="md:hidden flex bg-white p-1 rounded-xl shadow-sm border border-slate-200 mb-6 overflow-x-auto no-scrollbar">
-            <button 
-              onClick={() => setCurrentView('inventory')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
-                currentView === 'inventory' ? 'bg-blue-50 text-blue-600' : 'text-slate-500'
-              }`}
-            >
-              <Refrigerator size={16} />
-              Fridge
-            </button>
-            <button 
-              onClick={() => setCurrentView('meals')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
-                currentView === 'meals' ? 'bg-blue-50 text-blue-600' : 'text-slate-500'
-              }`}
-            >
-              <ChefHat size={16} />
-              Meals
-            </button>
-            <button 
-              onClick={() => setCurrentView('shopping')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
-                currentView === 'shopping' ? 'bg-blue-50 text-blue-600' : 'text-slate-500'
-              }`}
-            >
-              <ShoppingCart size={16} />
-              Shop
-            </button>
-            <button 
-              onClick={() => setCurrentView('guide')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
-                currentView === 'guide' ? 'bg-blue-50 text-blue-600' : 'text-slate-500'
-              }`}
-            >
-              <BookOpen size={16} />
-              Guide
-            </button>
+        {/* Mobile View Label */}
+        <div className="md:hidden flex items-center justify-between text-[11px] uppercase tracking-[0.18em] text-slate-400 font-bold px-1">
+          <span>{navItems.find((item) => item.view === currentView)?.label}</span>
+          <span>FreshKeeper</span>
         </div>
 
         {currentView === 'guide' && (
-          <div className="space-y-16 animate-fade-in">
+          <div className="space-y-10 md:space-y-16 animate-fade-in">
              {/* Intro */}
-            <section className="text-center max-w-2xl mx-auto space-y-4">
-              <h1 className="text-3xl md:text-5xl font-bold text-slate-900 leading-tight">
+            <section className="text-center max-w-2xl mx-auto space-y-3 md:space-y-4 px-2">
+              <h1 className="text-2xl md:text-5xl font-bold text-slate-900 leading-tight">
                 Master Your Fridge,<br />
                 <span className="text-blue-600">Stop the Spoilage.</span>
               </h1>
-              <p className="text-base md:text-lg text-slate-600">
+              <p className="text-sm md:text-lg text-slate-600">
                 Improper storage accelerates bacterial growth. 
                 Use this guide to keep food fresh, safe, and delicious.
               </p>
@@ -143,6 +123,9 @@ const App: React.FC = () => {
                     onZoneSelect={handleZoneSelect} 
                   />
                 </div>
+                <section className="lg:hidden">
+                  <ZoneDetail data={FRIDGE_ZONES[selectedZone]} />
+                </section>
                 <section className="hidden lg:block lg:col-span-7 xl:col-span-8">
                   <ZoneDetail data={FRIDGE_ZONES[selectedZone]} />
                 </section>
@@ -182,9 +165,9 @@ const App: React.FC = () => {
         
         {currentView === 'inventory' && (
           <div className="max-w-2xl mx-auto">
-             <div className="text-center mb-8">
-                <h1 className="text-3xl font-bold text-slate-900">My Fridge Inventory</h1>
-                <p className="text-slate-500 mt-2">Track your groceries and let AI estimate expiration dates.</p>
+             <div className="text-center mb-6 md:mb-8 px-2">
+                <h1 className="text-2xl md:text-3xl font-bold text-slate-900">My Fridge Inventory</h1>
+                <p className="text-sm md:text-base text-slate-500 mt-2">Track your groceries and let AI estimate expiration dates.</p>
              </div>
              <InventoryManager />
           </div>
@@ -192,9 +175,9 @@ const App: React.FC = () => {
 
         {currentView === 'meals' && (
           <div className="max-w-4xl mx-auto">
-             <div className="text-center mb-8">
-                <h1 className="text-3xl font-bold text-slate-900">Smart Meal Prep Planner</h1>
-                <p className="text-slate-500 mt-2">AI-curated recipes prioritizing ingredients expiring soon.</p>
+             <div className="text-center mb-6 md:mb-8 px-2">
+                <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Smart Meal Prep Planner</h1>
+                <p className="text-sm md:text-base text-slate-500 mt-2">AI-curated recipes prioritizing ingredients expiring soon.</p>
              </div>
              <MealPlanner />
           </div>
@@ -202,9 +185,9 @@ const App: React.FC = () => {
 
         {currentView === 'shopping' && (
            <div className="max-w-5xl mx-auto">
-              <div className="text-center mb-8">
-                <h1 className="text-3xl font-bold text-slate-900">Smart Shopping List</h1>
-                <p className="text-slate-500 mt-2">Restock what you've used and discover what you're missing.</p>
+              <div className="text-center mb-6 md:mb-8 px-2">
+                <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Smart Shopping List</h1>
+                <p className="text-sm md:text-base text-slate-500 mt-2">Restock what you've used and discover what you're missing.</p>
              </div>
              <ShoppingListManager />
            </div>
@@ -222,6 +205,25 @@ const App: React.FC = () => {
           </p>
         </div>
       </footer>
+
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 border-t border-slate-200 bg-white/95 backdrop-blur-xl shadow-[0_-10px_30px_rgba(15,23,42,0.08)]">
+        <div className="grid grid-cols-4 gap-1 px-2 py-2">
+          {navItems.map((item) => (
+            <button
+              key={item.view}
+              onClick={() => setCurrentView(item.view)}
+              className={`flex flex-col items-center justify-center gap-1 rounded-2xl py-2.5 text-[11px] font-bold transition-all ${
+                currentView === item.view
+                  ? 'bg-blue-50 text-blue-600 shadow-sm'
+                  : 'text-slate-400 active:bg-slate-100'
+              }`}
+            >
+              {item.icon}
+              <span>{item.shortLabel}</span>
+            </button>
+          ))}
+        </div>
+      </nav>
     </div>
   );
 };
