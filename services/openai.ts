@@ -11,7 +11,15 @@ async function postAi<T>(payload: Record<string, unknown>): Promise<T> {
     body: JSON.stringify(payload),
   });
 
-  const data = await response.json();
+  const raw = await response.text();
+  let data: any = null;
+
+  try {
+    data = raw ? JSON.parse(raw) : null;
+  } catch (error) {
+    throw new Error(raw || `AI request failed with status ${response.status}.`);
+  }
+
   if (!response.ok) {
     throw new Error(typeof data?.error === 'string' ? data.error : 'AI request failed.');
   }

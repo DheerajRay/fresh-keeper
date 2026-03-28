@@ -4,6 +4,14 @@ All notable changes to this project should be documented in this file.
 
 This project starts versioning with Semantic Versioning.
 
+## [0.2.3] - 2026-03-27
+
+- Moved the shared OpenAI handler under `api/_lib` so Vercel bundles the function code from inside the API tree.
+- Hardened the client AI fetcher to surface non-JSON server failures more clearly.
+- Moved manifest and service worker assets into `public/` for correct Vite production output.
+- Removed the stale AI Studio import map and broken `/index.css` reference from `index.html`.
+- Added a local SVG app icon for manifest and touch icon usage.
+
 ## [0.2.2] - 2026-03-27
 
 - Switched the Vercel API function to named `GET` and `POST` web handlers for better platform compatibility.

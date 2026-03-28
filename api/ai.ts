@@ -1,4 +1,4 @@
-import { handleAiRequest } from '../server/openai';
+import { handleAiRequest } from './_lib/openai';
 
 export const runtime = 'nodejs';
 
