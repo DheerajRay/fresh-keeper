@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import FridgeVisual from './components/FridgeVisual';
 import ZoneDetail from './components/ZoneDetail';
 import SpoilageSection from './components/SpoilageSection';
-import GeminiSearch from './components/GeminiSearch';
+import GuideAiSearch from './components/GuideAiSearch';
 import InventoryManager from './components/InventoryManager';
 import ShoppingListManager from './components/ShoppingListManager';
 import MealPlanner from './components/MealPlanner';
@@ -108,7 +108,7 @@ const App: React.FC = () => {
               </p>
             </section>
 
-            <GeminiSearch />
+            <GuideAiSearch />
 
             <section id="visual-guide" className="scroll-mt-24">
               <div className="flex items-center gap-4 mb-8">

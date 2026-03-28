@@ -4,6 +4,14 @@ All notable changes to this project should be documented in this file.
 
 This project starts versioning with Semantic Versioning.
 
+## [0.2.8] - 2026-03-28
+
+- Renamed the remaining live Gemini UI references to neutral FreshKeeper/OpenAI naming, including the guide AI component.
+- Updated the README to reflect the current OpenAI architecture, shared handler location, and test commands.
+- Added a Vitest + Testing Library test stack with unit coverage for `services/openai.ts`.
+- Added functional tests for the guide AI panel, meal planner discovery flow, and shopping suggestion flow.
+- Added `npm run test` and `npm run test:coverage` scripts and verified lint, test, coverage, and build locally.
+
 ## [0.2.6] - 2026-03-27
 
 - Inlined the OpenAI AI handler logic directly into `api/ai.ts` so the deployed Vercel function no longer depends on a secondary runtime import.

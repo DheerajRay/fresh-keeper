@@ -118,12 +118,12 @@ This app is a single-page client application with no routing library. AI feature
 - `components/InventoryManager.tsx` handles inventory CRUD, expiry logic, and image scanning.
 - `components/ShoppingListManager.tsx` handles store management, shopping items, and suggestion generation.
 - `components/MealPlanner.tsx` handles meal discovery, scheduling, tentative meal logic, and shopping list injection.
-- `components/GeminiSearch.tsx` handles AI storage Q&A.
+- `components/GuideAiSearch.tsx` handles AI storage Q&A.
 - `components/FridgeVisual.tsx` renders the fridge/pantry visualization.
 - `components/ZoneDetail.tsx` renders the educational zone details.
 - `components/SpoilageSection.tsx` renders the spoilage science content.
 - `services/openai.ts` contains all frontend AI calls.
-- `server/openai.ts` contains the shared OpenAI request logic.
+- `api/_lib/openai.ts` contains the shared OpenAI request logic for local development and shared server behavior.
 - `api/ai.ts` exposes the Vercel serverless API endpoint.
 - `constants.ts` contains the static storage guide, zone descriptions, shop defaults, and unit options.
 - `types.ts` defines shared app types.
@@ -165,9 +165,9 @@ Short version: the app is partially usable without AI, but several headline feat
 ### Degrades But Still Functions Without AI
 
 - Manual inventory add
-  The shelf-life service has a fallback response if Gemini fails, so the app can still add items, but estimates become generic and storage guidance becomes much less trustworthy.
+  The shelf-life service has a fallback response if the AI service fails, so the app can still add items, but estimates become generic and storage guidance becomes much less trustworthy.
 - Shopping suggestions
-  Heuristic "expiring soon" suggestions still work even if Gemini suggestions fail.
+  Heuristic "expiring soon" suggestions still work even if AI suggestions fail.
 - Store prediction
   Manual item addition still works when shop prediction fails.
 - Guide Q&A
@@ -187,22 +187,22 @@ Yes, but not at the current feature quality level.
 To make the app fully AI-free, these areas would need replacement:
 
 - Shelf-life prediction:
-  Replace Gemini with a structured local rules dataset for common foods.
+  Replace the OpenAI-backed classifier with a structured local rules dataset for common foods.
 - Storage recommendation:
-  Replace Gemini with a curated product-to-zone mapping table.
+  Replace the OpenAI-backed recommender with a curated product-to-zone mapping table.
 - Image scanning:
   Remove the feature or replace it with a separate image recognition workflow.
 - Shopping suggestions:
   Expand heuristics based on inventory depletion, recurring removals, and expiry windows.
 - Meal planning:
-  Replace Gemini with a fixed recipe library plus deterministic ingredient matching.
+  Replace the OpenAI-backed meal generator with a fixed recipe library plus deterministic ingredient matching.
 - Food Q&A:
   Replace the freeform chat with static FAQ content or search over a local knowledge base.
 
 Conclusion:
 
 - The app can be made to work without AI.
-- The app cannot deliver its current "smart" positioning without replacing Gemini with either strong local data or a backend service.
+- The app cannot deliver its current "smart" positioning without replacing the current AI-backed features with either strong local data or a backend service.
 
 ## Security Note About AI
 
@@ -270,6 +270,16 @@ http://localhost:3000
 npm run build
 ```
 
+### Test Commands
+
+```bash
+npm run test
+```
+
+```bash
+npm run test:coverage
+```
+
 ### Vercel Deployment
 
 Add the same environment variables in Vercel Project Settings:
@@ -289,10 +299,11 @@ npm run lint
 
 ## Verified Project Status
 
-Checked locally on March 27, 2026:
+Checked locally on March 28, 2026:
 
 - `npm install` completed successfully.
 - `npm run lint` passed.
+- `npm run test` passed.
 - `npm run build` passed.
 
 Build observations:
@@ -353,7 +364,7 @@ Implications:
 
 If this project is going to move beyond prototype stage, the highest-value next steps are:
 
-1. Add tests around the `/api/ai` action handlers and critical frontend state flows.
+1. Expand tests around the `/api/ai` action handlers and add more edge-case coverage for inventory scanning and fallback behavior.
 2. Replace CDN Tailwind with a normal build-integrated styling pipeline.
 3. Add a real local rules engine for common shelf-life and storage data so the app remains useful without AI.
 4. Introduce export/import for local data.
