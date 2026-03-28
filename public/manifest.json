@@ -3,8 +3,8 @@
   "short_name": "FreshKeeper",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#F8FAFC",
-  "theme_color": "#2563EB",
+  "background_color": "#09090B",
+  "theme_color": "#111317",
   "orientation": "portrait",
   "icons": [
     {

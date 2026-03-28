@@ -345,11 +345,10 @@ const InventoryManager: React.FC = () => {
           { label: 'Tracked items', value: items.length },
           { label: 'Need attention', value: expiringSoon, note: 'Expired or due within 48 hours' },
           { label: 'Zones in use', value: zonesUsed || 0 },
-          { label: 'Primary mode', value: 'List', note: 'Map moved to secondary view' },
         ]}
       />
 
-      <Panel className="p-5 md:p-6">
+      <Panel className="p-4 md:p-5">
         <SectionHeader
           title="Inventory list"
           description="The list is the working surface. Use the map only when you need to inspect location layout."
@@ -363,7 +362,7 @@ const InventoryManager: React.FC = () => {
           }
         />
 
-        <div className="mt-6 space-y-6">
+        <div className="mt-5 space-y-5">
           {groupedItems.length === 0 ? (
             <EmptyState
               title="No items tracked yet"
@@ -387,7 +386,7 @@ const InventoryManager: React.FC = () => {
                   {group.items.map((item) => (
                     <div
                       key={item.id}
-                      className="rounded-3xl border border-neutral-200 bg-neutral-50 px-4 py-4 transition hover:border-neutral-400"
+                    className="border border-neutral-200 bg-white px-4 py-4 transition hover:border-neutral-400"
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="space-y-2">
@@ -400,7 +399,7 @@ const InventoryManager: React.FC = () => {
                               {getStatus(item.expiryDate)}
                             </span>
                           </div>
-                          <p className="text-sm text-neutral-500">{formatDaysLeft(item.expiryDate)}</p>
+                          <p className="text-xs uppercase tracking-[0.16em] text-neutral-500">{formatDaysLeft(item.expiryDate)}</p>
                           {item.note ? <p className="max-w-2xl text-sm leading-6 text-neutral-600">{item.note}</p> : null}
                         </div>
 
@@ -514,7 +513,7 @@ const InventoryManager: React.FC = () => {
                         className={cx(
                           'rounded-full border px-3 py-2 text-sm transition',
                           selectedZone === zoneId
-                            ? 'border-neutral-950 bg-neutral-950 text-white'
+                            ? 'border-neutral-950 bg-transparent text-neutral-950'
                             : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-400',
                         )}
                       >
@@ -564,7 +563,7 @@ const InventoryManager: React.FC = () => {
       >
         {activeItem ? (
           <div className="space-y-5">
-            <div className="rounded-3xl border border-neutral-200 bg-neutral-50 p-4">
+            <div className="border border-neutral-200 bg-white p-4">
               <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-neutral-500">Freshness</p>
               <p className="mt-2 text-base font-semibold text-neutral-950">{getStatus(activeItem.expiryDate)}</p>
               {activeItem.note ? <p className="mt-2 text-sm leading-6 text-neutral-600">{activeItem.note}</p> : null}
@@ -572,7 +571,7 @@ const InventoryManager: React.FC = () => {
 
             <div className="space-y-2">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">Quantity</p>
-              <div className="flex items-center justify-between rounded-3xl border border-neutral-200 bg-neutral-50 px-4 py-3">
+              <div className="flex items-center justify-between border border-neutral-200 bg-white px-4 py-3">
                 <button
                   type="button"
                   onClick={() => updateQuantity(activeItem.id, -1)}
@@ -608,7 +607,7 @@ const InventoryManager: React.FC = () => {
                     className={cx(
                       'rounded-2xl border px-4 py-3 text-left text-sm transition',
                       activeItem.zoneId === zoneId
-                        ? 'border-neutral-950 bg-neutral-950 text-white'
+                        ? 'border-neutral-950 bg-transparent text-neutral-950'
                         : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-400',
                     )}
                   >

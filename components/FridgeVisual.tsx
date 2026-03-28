@@ -39,7 +39,7 @@ const FridgeVisual: React.FC<FridgeVisualProps> = ({
   const zoneGroups = activeView === 'cold' ? COLD_ZONES : DRY_ZONES;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 [touch-action:pan-y]">
       <SegmentedControl<'cold' | 'dry'>
         value={activeView}
         onChange={(value) => setActiveView(value)}
@@ -49,7 +49,7 @@ const FridgeVisual: React.FC<FridgeVisualProps> = ({
         ]}
       />
 
-      <div className="rounded-[28px] border border-neutral-200 bg-neutral-50 p-3">
+      <div className="border border-neutral-200 bg-white p-3 [touch-action:pan-y]">
         <div className={cx('grid gap-3', activeView === 'cold' ? 'grid-cols-1' : 'grid-cols-1')}>
           {zoneGroups.map((zoneId) => {
             const zoneItems = items.filter((item) => item.zoneId === zoneId);
@@ -60,8 +60,8 @@ const FridgeVisual: React.FC<FridgeVisualProps> = ({
                 key={zoneId}
                 onClick={() => onZoneSelect?.(zoneId)}
                 className={cx(
-                  'rounded-3xl border bg-white p-4 text-left transition',
-                  isSelected ? 'border-neutral-950 shadow-sm' : 'border-neutral-200',
+                  'rounded-3xl border bg-neutral-50 p-4 text-left transition',
+                  isSelected ? 'border-neutral-950' : 'border-neutral-200',
                   isGuideMode ? 'cursor-pointer hover:border-neutral-400' : 'cursor-default',
                 )}
               >

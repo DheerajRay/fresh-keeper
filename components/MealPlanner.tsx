@@ -243,11 +243,10 @@ const MealPlanner: React.FC = () => {
           { label: 'Planned meals', value: plannedCount },
           { label: 'Idea queue', value: suggestionQueue.length, note: 'Reusable suggestions' },
           { label: 'Needs ingredients', value: queuedMeals.length },
-          { label: 'Current mode', value: mode === 'plan' ? 'Plan' : 'Discover' },
         ]}
       />
 
-      <Panel className="p-5 md:p-6">
+      <Panel className="p-4 md:p-5">
         <SectionHeader
           title={mode === 'plan' ? 'Weekly plan' : 'Discover meals'}
           description={
@@ -258,48 +257,48 @@ const MealPlanner: React.FC = () => {
         />
 
         {mode === 'plan' ? (
-          <div className="mt-6 space-y-6">
-            <div className="flex gap-3 overflow-x-auto pb-2">
+          <div className="mt-5 space-y-5">
+            <div className="flex gap-2 overflow-x-auto pb-1">
               {dates.map((date) => (
                 <button
                   key={date}
                   type="button"
                   onClick={() => setSelectedDate(date)}
                   className={cx(
-                    'min-w-[86px] rounded-3xl border px-4 py-3 text-left transition',
+                    'min-w-[64px] rounded-3xl border px-3 py-2 text-left transition',
                     selectedDate === date
-                      ? 'border-neutral-950 bg-neutral-950 text-white'
-                      : 'border-neutral-200 bg-neutral-50 text-neutral-700',
+                      ? 'border-neutral-950 bg-transparent text-neutral-950'
+                      : 'border-neutral-200 bg-white text-neutral-700',
                   )}
                 >
                   <p className="text-[11px] uppercase tracking-[0.18em]">
                     {new Date(date).toLocaleDateString('en-US', { weekday: 'short' })}
                   </p>
-                  <p className="mt-1 text-2xl font-semibold">{new Date(date).getDate()}</p>
+                  <p className="mt-1 text-lg font-semibold">{new Date(date).getDate()}</p>
                 </button>
               ))}
               <button
                 type="button"
                 onClick={() => setSelectedDate('tentative')}
                 className={cx(
-                  'min-w-[120px] rounded-3xl border px-4 py-3 text-left transition',
+                  'min-w-[92px] rounded-3xl border px-3 py-2 text-left transition',
                   selectedDate === 'tentative'
-                    ? 'border-neutral-950 bg-neutral-950 text-white'
-                    : 'border-neutral-200 bg-neutral-50 text-neutral-700',
+                    ? 'border-neutral-950 bg-transparent text-neutral-950'
+                    : 'border-neutral-200 bg-white text-neutral-700',
                 )}
               >
                 <p className="text-[11px] uppercase tracking-[0.18em]">Queue</p>
-                <p className="mt-1 text-base font-semibold">Needs Ingredients</p>
+                <p className="mt-1 text-sm font-semibold">Needs Ingredients</p>
               </button>
             </div>
 
             {selectedDate === 'tentative' ? (
-              <Panel className="border-neutral-300 bg-neutral-50 p-4">
+              <div className="border border-neutral-300 bg-white p-4">
                 <p className="text-sm leading-6 text-neutral-700">
                   Meals land here when ingredients are missing or you choose to schedule them later. Once your
                   inventory covers the missing items, they can move into the calendar.
                 </p>
-              </Panel>
+              </div>
             ) : null}
 
             {selectedPlanMeals.length === 0 ? (
@@ -321,7 +320,7 @@ const MealPlanner: React.FC = () => {
                 {selectedPlanMeals.map((meal) => (
                   <div
                     key={meal.id}
-                    className="rounded-3xl border border-neutral-200 bg-neutral-50 px-4 py-4 transition hover:border-neutral-400"
+                    className="border border-neutral-200 bg-white px-4 py-4 transition hover:border-neutral-400"
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div className="space-y-2">
@@ -365,7 +364,7 @@ const MealPlanner: React.FC = () => {
           </div>
         ) : (
           <div className="mt-6 space-y-6">
-            <Panel className="bg-neutral-50 p-4 md:p-5">
+            <div className="border border-neutral-200 bg-white p-4 md:p-5">
               <form onSubmit={handleFetchIdeas} className="space-y-5">
                 <div className="space-y-2">
                   <label className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">
@@ -385,7 +384,7 @@ const MealPlanner: React.FC = () => {
                           className={cx(
                             'rounded-full border px-3 py-2 text-sm transition',
                             isSelected
-                              ? 'border-neutral-950 bg-neutral-950 text-white'
+                              ? 'border-neutral-950 bg-transparent text-neutral-950'
                               : 'border-neutral-200 bg-white text-neutral-700',
                           )}
                         >
@@ -404,7 +403,7 @@ const MealPlanner: React.FC = () => {
                     value={craving}
                     onChange={(event) => setCraving(event.target.value)}
                     placeholder="Healthy Japanese dinner, high-protein snacks, something comforting..."
-                    className="min-h-[110px] w-full rounded-3xl border border-neutral-200 bg-white px-4 py-4 text-sm outline-none transition focus:border-neutral-950"
+                    className="min-h-[104px] w-full rounded-3xl border border-neutral-200 bg-neutral-50 px-4 py-4 text-sm outline-none transition focus:border-neutral-950"
                   />
                 </label>
 
@@ -413,7 +412,7 @@ const MealPlanner: React.FC = () => {
                   {isLoading ? 'Generating ideas' : 'Generate meal ideas'}
                 </PrimaryButton>
               </form>
-            </Panel>
+            </div>
 
             <div className="space-y-3">
               <SectionHeader
@@ -440,7 +439,7 @@ const MealPlanner: React.FC = () => {
                     return (
                       <div
                         key={meal.id}
-                        className="rounded-3xl border border-neutral-200 bg-neutral-50 px-4 py-4 transition hover:border-neutral-400"
+                        className="border border-neutral-200 bg-white px-4 py-4 transition hover:border-neutral-400"
                       >
                         <div className="flex items-start justify-between gap-4">
                           <div className="space-y-2">
@@ -502,7 +501,7 @@ const MealPlanner: React.FC = () => {
       >
         {selectedMeal ? (
           <div className="space-y-6">
-            <div className="rounded-3xl border border-neutral-200 bg-neutral-50 p-4">
+            <div className="border border-neutral-200 bg-white p-4">
               <p className="text-sm leading-6 text-neutral-700">{selectedMeal.description}</p>
               {selectedMeal.chefTip ? (
                 <p className="mt-3 text-sm leading-6 text-neutral-600">Chef tip: {selectedMeal.chefTip}</p>

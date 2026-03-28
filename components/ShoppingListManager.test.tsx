@@ -61,7 +61,7 @@ describe('ShoppingListManager', () => {
       throw new Error('Expected Yogurt suggestion card to render.');
     }
 
-    await user.click(within(yogurtCard as HTMLElement).getByRole('button', { name: /accept/i }));
+    await user.click(within(yogurtCard as HTMLElement).getByRole('button', { name: /accept yogurt/i }));
 
     await waitFor(() => {
       const savedList = JSON.parse(localStorage.getItem('freshkeeper_shopping_list') || '[]');

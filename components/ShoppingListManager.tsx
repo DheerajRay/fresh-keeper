@@ -212,8 +212,8 @@ const ShoppingListManager: React.FC = () => {
         ]}
       />
 
-      <div className="space-y-6">
-        <Panel className="p-5 md:p-6">
+      <div className="space-y-5">
+        <Panel className="p-4 md:p-5">
           <SectionHeader
             title="Add an item"
             description="Keep manual entry short. If you do not choose a store, classification runs quietly in the background."
@@ -264,7 +264,7 @@ const ShoppingListManager: React.FC = () => {
           </form>
         </Panel>
 
-        <Panel className="p-5 md:p-6">
+        <Panel className="p-4 md:p-5">
           <SectionHeader
             title="Store filter"
             description="Treat stores as a list filter, not a separate layout."
@@ -277,34 +277,39 @@ const ShoppingListManager: React.FC = () => {
             }
           />
 
-          <div className="mt-5 flex gap-3 overflow-x-auto pb-2">
-            <button
-              type="button"
-              onClick={() => setActiveShopId(null)}
-              className={cx(
-                'rounded-full border px-4 py-2 text-sm transition',
-                activeShopId === null
-                  ? 'border-neutral-950 bg-neutral-950 text-white'
-                  : 'border-neutral-200 bg-neutral-50 text-neutral-700',
-              )}
-            >
-              All items
-            </button>
-            {shops.map((shop) => (
+          <div className="mt-5 space-y-2">
+            <label className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">
+              Store filter
+            </label>
+            <div className="flex flex-wrap gap-2">
               <button
-                key={shop.id}
                 type="button"
-                onClick={() => setActiveShopId(shop.id)}
+                onClick={() => setActiveShopId(null)}
                 className={cx(
-                  'rounded-full border px-4 py-2 text-sm transition',
-                  activeShopId === shop.id
-                    ? 'border-neutral-950 bg-neutral-950 text-white'
-                    : 'border-neutral-200 bg-neutral-50 text-neutral-700',
+                  'rounded-full border px-3 py-2 text-sm transition',
+                  activeShopId === null
+                    ? 'border-neutral-950 bg-transparent text-neutral-950'
+                    : 'border-neutral-200 bg-white text-neutral-700',
                 )}
               >
-                {shop.name}
+                All items
               </button>
-            ))}
+              {shops.map((shop) => (
+                <button
+                  key={shop.id}
+                  type="button"
+                  onClick={() => setActiveShopId(shop.id)}
+                  className={cx(
+                    'rounded-full border px-3 py-2 text-sm transition',
+                    activeShopId === shop.id
+                      ? 'border-neutral-950 bg-transparent text-neutral-950'
+                      : 'border-neutral-200 bg-white text-neutral-700',
+                  )}
+                >
+                  {shop.name}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="mt-6 space-y-3">
@@ -318,10 +323,10 @@ const ShoppingListManager: React.FC = () => {
                 <div
                   key={item.id}
                   className={cx(
-                    'rounded-3xl border px-4 py-4 transition',
+                    'border px-4 py-4 transition',
                     item.isChecked
                       ? 'border-neutral-200 bg-neutral-100 text-neutral-500'
-                      : 'border-neutral-200 bg-neutral-50 text-neutral-900 hover:border-neutral-400',
+                      : 'border-neutral-200 bg-white text-neutral-900 hover:border-neutral-400',
                   )}
                 >
                   <div className="flex items-start justify-between gap-4">
@@ -332,7 +337,7 @@ const ShoppingListManager: React.FC = () => {
                         className={cx(
                           'mt-0.5 flex h-6 w-6 items-center justify-center rounded-full border transition',
                           item.isChecked
-                            ? 'border-neutral-950 bg-neutral-950 text-white'
+                            ? 'border-neutral-950 bg-transparent text-neutral-950'
                             : 'border-neutral-300 bg-white text-transparent',
                         )}
                         aria-label={`Mark ${item.name} as ${item.isChecked ? 'unchecked' : 'checked'}`}
@@ -376,7 +381,7 @@ const ShoppingListManager: React.FC = () => {
           </div>
         </Panel>
 
-        <Panel className="p-5 md:p-6">
+        <Panel className="p-4 md:p-5">
           <SectionHeader
             title="Suggestion intake"
             description="Suggestions help fill the list. Review, accept, dismiss, or bulk-add them."
@@ -397,7 +402,7 @@ const ShoppingListManager: React.FC = () => {
               />
             ) : (
               suggestions.map((item) => (
-                <div key={item.id} className="rounded-3xl border border-neutral-200 bg-neutral-50 px-4 py-4">
+                <div key={item.id} className="border border-neutral-200 bg-white px-4 py-4">
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
@@ -412,7 +417,12 @@ const ShoppingListManager: React.FC = () => {
                       {item.reason ? <p className="mt-2 text-sm text-neutral-500">{item.reason}</p> : null}
                     </div>
                     <div className="flex items-center gap-2">
-                      <PrimaryButton type="button" onClick={() => addSuggestionToList(item)} className="px-3 py-2">
+                      <PrimaryButton
+                        type="button"
+                        onClick={() => addSuggestionToList(item)}
+                        className="px-3 py-2"
+                        aria-label={`Accept ${item.name}`}
+                      >
                         <Plus size={16} />
                         Accept
                       </PrimaryButton>

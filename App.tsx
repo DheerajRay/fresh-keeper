@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { BookOpen, ChefHat, Grid2X2, Menu, Refrigerator, ShoppingCart } from 'lucide-react';
-import FridgeVisual from './components/FridgeVisual';
+import { BookOpen, ChefHat, ChevronDown, Grid2X2, Menu, Refrigerator, ShoppingCart } from 'lucide-react';
 import GuideAiSearch from './components/GuideAiSearch';
 import InventoryManager from './components/InventoryManager';
 import MealPlanner from './components/MealPlanner';
@@ -10,11 +9,8 @@ import ZoneDetail from './components/ZoneDetail';
 import { FRIDGE_ZONES } from './constants';
 import { ZoneId } from './types';
 import {
-  EmptyState,
   PageHeader,
   Panel,
-  PrimaryButton,
-  SecondaryButton,
   SectionHeader,
   SurfaceSheet,
   cx,
@@ -25,7 +21,7 @@ type AppView = 'inventory' | 'meals' | 'shopping' | 'guide';
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<AppView>('inventory');
   const [selectedZone, setSelectedZone] = useState<ZoneId>(ZoneId.LOWER_SHELVES);
-  const [showGuideMap, setShowGuideMap] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   const navItems = useMemo(
     () => [
@@ -41,10 +37,10 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#f5f5f3] text-neutral-950">
-      <header className="sticky top-0 z-50 border-b border-neutral-200 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 md:px-6">
+      <header className="sticky top-0 z-50 border-b border-neutral-200 bg-white">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 md:px-6">
           <div className="flex items-center gap-3">
-            <div className="rounded-2xl border border-neutral-200 bg-neutral-950 p-2.5 text-white">
+            <div className="rounded-2xl border border-neutral-200 bg-neutral-950 p-2 text-white">
               <Grid2X2 size={18} />
             </div>
             <div>
@@ -55,7 +51,7 @@ const App: React.FC = () => {
             </div>
           </div>
 
-          <nav className="hidden rounded-2xl border border-neutral-200 bg-neutral-100 p-1 md:flex">
+          <nav className="hidden rounded-2xl border border-neutral-200 bg-transparent p-1 md:flex">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = currentView === item.view;
@@ -65,11 +61,13 @@ const App: React.FC = () => {
                   type="button"
                   onClick={() => setCurrentView(item.view)}
                   className={cx(
-                    'flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-medium transition',
-                    isActive ? 'bg-neutral-950 text-white' : 'text-neutral-600 hover:text-neutral-950',
+                    'flex items-center gap-2 rounded-2xl px-3 py-2 text-xs font-medium uppercase tracking-[0.16em] transition',
+                    isActive
+                      ? 'border border-neutral-950 bg-transparent text-neutral-950'
+                      : 'text-neutral-600 hover:text-neutral-950',
                   )}
                 >
-                  <Icon size={15} />
+                  <Icon size={14} />
                   {item.label}
                 </button>
               );
@@ -79,8 +77,9 @@ const App: React.FC = () => {
           <div className="md:hidden">
             <button
               type="button"
-              className="rounded-2xl border border-neutral-200 bg-neutral-50 p-2 text-neutral-700"
+              className="rounded-2xl border border-neutral-200 bg-transparent p-2 text-neutral-700"
               aria-label="Navigation menu"
+              onClick={() => setShowMobileMenu(true)}
             >
               <Menu size={18} />
             </button>
@@ -88,26 +87,92 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 pb-28 pt-6 md:px-6 md:pb-12 md:pt-8">
+      <main className="mx-auto max-w-6xl px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-5 md:px-6 md:pb-12 md:pt-7">
         {currentView === 'inventory' ? <InventoryManager /> : null}
         {currentView === 'meals' ? <MealPlanner /> : null}
         {currentView === 'shopping' ? <ShoppingListManager /> : null}
         {currentView === 'guide' ? (
-          <div className="space-y-8">
+          <div className="space-y-6">
             <PageHeader
               eyebrow="Reference"
               title="Guide and storage tips"
-              description="Search storage guidance, review zone rules, and use the fridge map only when you need a visual check."
-              action={
-                <SecondaryButton type="button" onClick={() => setShowGuideMap(true)}>
-                  Open storage map
-                </SecondaryButton>
-              }
+              description="Search storage guidance and review zone rules in one reference flow."
             />
 
             <GuideAiSearch />
 
-            <div className="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
+            <div className="md:hidden">
+              <Panel className="p-4">
+                <SectionHeader
+                  title="Storage zones"
+                  description="Use one accordion list so the zone details stay attached to the zone you opened."
+                />
+                <div className="mt-4 space-y-2">
+                  {guideZoneList.map((zone) => (
+                    <details
+                      key={`mobile-zone-${zone.id}`}
+                      className="border border-neutral-200 bg-white"
+                      open={selectedZone === zone.id}
+                      onToggle={(event) => {
+                        if ((event.currentTarget as HTMLDetailsElement).open) setSelectedZone(zone.id);
+                      }}
+                    >
+                      <summary className="flex cursor-pointer list-none items-start justify-between gap-4 px-4 py-4">
+                        <span>
+                          <span className="block text-sm font-semibold text-neutral-950">{zone.name}</span>
+                          <span className="mt-1 block text-xs text-neutral-500">{zone.temperature}</span>
+                        </span>
+                        <span className="flex items-center gap-3">
+                          <span className="text-[11px] uppercase tracking-[0.16em] text-neutral-400">
+                            {zone.spoilageRisk}
+                          </span>
+                          <ChevronDown size={16} className="text-neutral-500" />
+                        </span>
+                      </summary>
+                      <div className="border-t border-neutral-200 px-4 py-4">
+                        <p className="text-sm leading-6 text-neutral-600">{zone.description}</p>
+
+                        <div className="mt-4 space-y-3">
+                          <div className="space-y-2">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-neutral-500">
+                              What belongs here?
+                            </p>
+                            <div className="space-y-2">
+                              {zone.bestFor.map((value) => (
+                                <div
+                                  key={`${zone.id}-best-${value}`}
+                                  className="border-l border-neutral-300 pl-3 text-sm leading-6 text-neutral-700"
+                                >
+                                  {value}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-neutral-500">
+                              Storage notes
+                            </p>
+                            <div className="space-y-2">
+                              {zone.tips.map((value) => (
+                                <div
+                                  key={`${zone.id}-tip-${value}`}
+                                  className="border-l border-neutral-300 pl-3 text-sm leading-6 text-neutral-700"
+                                >
+                                  {value}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </details>
+                  ))}
+                </div>
+              </Panel>
+            </div>
+
+            <div className="hidden gap-4 md:grid xl:grid-cols-[300px_minmax(0,1fr)]">
               <Panel className="p-4 md:p-5">
                 <SectionHeader
                   title="Storage zones"
@@ -122,7 +187,7 @@ const App: React.FC = () => {
                       className={cx(
                         'flex w-full items-start justify-between rounded-2xl border px-4 py-3 text-left transition',
                         selectedZone === zone.id
-                          ? 'border-neutral-950 bg-neutral-950 text-white'
+                          ? 'border-neutral-950 bg-transparent text-neutral-950'
                           : 'border-neutral-200 bg-neutral-50 text-neutral-700 hover:border-neutral-400',
                       )}
                     >
@@ -150,29 +215,8 @@ const App: React.FC = () => {
                 </div>
               </Panel>
 
-              <div className="space-y-6">
+              <div>
                 <ZoneDetail data={FRIDGE_ZONES[selectedZone]} />
-
-                <details className="rounded-3xl border border-neutral-200 bg-white p-4 md:hidden">
-                  <summary className="cursor-pointer list-none text-sm font-semibold text-neutral-950">
-                    View storage map
-                  </summary>
-                  <div className="mt-4">
-                    <FridgeVisual selectedZone={selectedZone} onZoneSelect={setSelectedZone} />
-                  </div>
-                </details>
-
-                <div className="hidden md:block">
-                  <Panel className="p-5">
-                    <SectionHeader
-                      title="Optional visual map"
-                      description="Use the map if you want a quick mental model of cold versus dry storage."
-                    />
-                    <div className="mt-5">
-                      <FridgeVisual selectedZone={selectedZone} onZoneSelect={setSelectedZone} />
-                    </div>
-                  </Panel>
-                </div>
               </div>
             </div>
 
@@ -187,13 +231,13 @@ const App: React.FC = () => {
         ) : null}
       </main>
 
-      <footer className="border-t border-neutral-200 bg-white">
+      <footer className="hidden border-t border-neutral-200 bg-white md:block">
         <div className="mx-auto max-w-7xl px-4 py-8 text-sm text-neutral-600 md:px-6">
           FreshKeeper keeps inventory, meal planning, shopping, and storage guidance in one local workflow.
         </div>
       </footer>
 
-      <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-neutral-200 bg-white/95 px-2 py-2 backdrop-blur md:hidden">
+      <nav className="fixed inset-x-4 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-50 mx-auto max-w-md rounded-2xl border border-neutral-200 bg-white p-1 md:hidden">
         <div className="grid grid-cols-4 gap-1">
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -204,8 +248,10 @@ const App: React.FC = () => {
                 type="button"
                 onClick={() => setCurrentView(item.view)}
                 className={cx(
-                  'flex flex-col items-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-semibold transition',
-                  isActive ? 'bg-neutral-950 text-white' : 'text-neutral-500',
+                  'flex flex-col items-center gap-1 rounded-2xl px-2 py-2 text-[9px] font-semibold uppercase tracking-[0.14em] transition',
+                  isActive
+                    ? 'border border-neutral-950 bg-transparent text-neutral-950'
+                    : 'text-neutral-500',
                 )}
               >
                 <Icon size={16} />
@@ -217,13 +263,41 @@ const App: React.FC = () => {
       </nav>
 
       <SurfaceSheet
-        open={showGuideMap}
-        onClose={() => setShowGuideMap(false)}
-        title="Storage map"
-        description="Use the map for orientation only. The zone list remains the primary reference."
+        open={showMobileMenu}
+        onClose={() => setShowMobileMenu(false)}
+        title="Navigate"
+        description="Use the floating dock for quick switching, or choose a section here when you want the full labels."
       >
-        <FridgeVisual selectedZone={selectedZone} onZoneSelect={setSelectedZone} />
+        <div className="space-y-3">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = currentView === item.view;
+            return (
+              <button
+                key={`mobile-${item.view}`}
+                type="button"
+                onClick={() => {
+                  setCurrentView(item.view);
+                  setShowMobileMenu(false);
+                }}
+                className={cx(
+                  'flex w-full items-center justify-between rounded-2xl border px-4 py-4 text-left transition',
+                  isActive
+                    ? 'border-neutral-950 bg-transparent text-neutral-950'
+                    : 'border-neutral-200 bg-neutral-50 text-neutral-700',
+                )}
+              >
+                <span className="flex items-center gap-3">
+                  <Icon size={18} />
+                  <span className="text-sm font-semibold">{item.label}</span>
+                </span>
+                <span className="text-[11px] uppercase tracking-[0.18em]">{item.shortLabel}</span>
+              </button>
+            );
+          })}
+        </div>
       </SurfaceSheet>
+
     </div>
   );
 };

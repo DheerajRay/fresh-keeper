@@ -146,4 +146,34 @@ describe('ui primitives', () => {
     expect(onCloseSheet).toHaveBeenCalledTimes(1);
     expect(onCloseDialog).toHaveBeenCalledTimes(1);
   });
+
+  it('locks and restores page scrolling while overlays are open', () => {
+    const originalScrollTo = window.scrollTo;
+    const scrollToMock = vi.fn();
+    Object.defineProperty(window, 'scrollY', { value: 180, configurable: true });
+    window.scrollTo = scrollToMock;
+
+    const { rerender } = render(
+      <SurfaceSheet open onClose={() => {}} title="Scroll lock">
+        Body
+      </SurfaceSheet>,
+    );
+
+    expect(document.body.style.position).toBe('fixed');
+    expect(document.body.style.top).toBe('-180px');
+    expect(document.documentElement.style.overflow).toBe('hidden');
+
+    rerender(
+      <SurfaceSheet open={false} onClose={() => {}} title="Scroll lock">
+        Body
+      </SurfaceSheet>,
+    );
+
+    expect(document.body.style.position).toBe('');
+    expect(document.body.style.top).toBe('');
+    expect(document.documentElement.style.overflow).toBe('');
+    expect(scrollToMock).toHaveBeenCalledWith(0, 180);
+
+    window.scrollTo = originalScrollTo;
+  });
 });

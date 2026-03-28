@@ -350,7 +350,7 @@ describe('MealPlanner', () => {
 
     expect(screen.getByText(/No meals on this day/i)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /Explore ideas/i }));
-    expect(screen.getByRole('button', { name: /^Discover$/i })).toHaveClass('bg-neutral-950');
+    expect(screen.getByRole('button', { name: /^Discover$/i })).toHaveClass('border-neutral-950');
 
     await user.click(screen.getByRole('button', { name: /Generate meal ideas/i }));
     expect(await screen.findByText('Oat Bowl')).toBeInTheDocument();

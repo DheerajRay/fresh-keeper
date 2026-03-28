@@ -4,6 +4,16 @@ All notable changes to this project should be documented in this file.
 
 This project starts versioning with Semantic Versioning.
 
+## [0.3.1] - 2026-03-28
+
+- Shifted the app to a mono-forward type system to better match the duel-engine reference while keeping the existing grayscale product language.
+- Converted the app shell to a darker, flatter control-surface aesthetic with reduced radii, lighter visual nesting, and outlined active states instead of filled white highlights.
+- Tightened mobile layout density with compact stat strips, a safer floating navigation dock, and smaller working surfaces so core actions appear earlier on iPhone.
+- Fixed overlay behavior for mobile sheets and storage-map flows by locking page scroll correctly and moving the sheet content onto a dedicated touch scroll region.
+- Restyled shopping store filters into the same chip-based system as dietary preferences for a more consistent selection model.
+- Simplified the guide page on mobile into an accordion-style zone reference with inline details, and removed the duplicate storage-map entry from the guide flow.
+- Updated the PWA icon and manifest styling to match the dark minimal theme, and refreshed related tests to cover the revised shell, guide, scroll, and interaction behavior.
+
 ## [0.3.0] - 2026-03-28
 
 - Rebuilt the shell into a monochrome command-center layout with tighter page headers, calmer navigation, and a simplified guide experience.

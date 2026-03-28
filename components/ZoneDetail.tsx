@@ -48,7 +48,7 @@ const ZoneDetail: React.FC<ZoneDetailProps> = ({ data }) => {
                   {(values as string[]).map((value) => (
                     <div
                       key={value}
-                      className="rounded-2xl border border-neutral-200 bg-neutral-50 px-3 py-3 text-sm leading-6 text-neutral-700"
+                      className="border-l border-neutral-300 pl-3 text-sm leading-6 text-neutral-700"
                     >
                       {value}
                     </div>

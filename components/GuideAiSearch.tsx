@@ -24,13 +24,13 @@ const GuideAiSearch: React.FC = () => {
   };
 
   return (
-    <Panel className="p-5 md:p-6">
+    <Panel className="p-4 md:p-5">
       <SectionHeader
         title="Ask storage guidance"
         description="Use the guide like a handbook. Ask one food-storage or shelf-life question at a time."
       />
 
-      <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+      <form onSubmit={handleSubmit} className="mt-4 space-y-4">
         <label className="block">
           <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">
             Question
@@ -52,7 +52,7 @@ const GuideAiSearch: React.FC = () => {
       </form>
 
       {answer ? (
-        <div className="mt-5 rounded-3xl border border-neutral-200 bg-neutral-50 p-4">
+        <div className="mt-4 border-t border-neutral-200 pt-4">
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-neutral-500">Answer</p>
           <div className={canCollapse && !expanded ? 'max-h-40 overflow-hidden' : ''}>
             <div className="prose prose-neutral mt-3 max-w-none text-sm leading-6">
