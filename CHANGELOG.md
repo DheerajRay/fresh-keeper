@@ -4,6 +4,10 @@ All notable changes to this project should be documented in this file.
 
 This project starts versioning with Semantic Versioning.
 
+## [0.3.2] - 2026-03-28
+
+- Simplified the PWA icon by removing the outer border frame and shrinking the central mark so the installed mobile icon reads cleaner against the dark theme.
+
 ## [0.3.1] - 2026-03-28
 
 - Shifted the app to a mono-forward type system to better match the duel-engine reference while keeping the existing grayscale product language.
