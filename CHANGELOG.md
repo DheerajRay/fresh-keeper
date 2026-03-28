@@ -4,6 +4,10 @@ All notable changes to this project should be documented in this file.
 
 This project starts versioning with Semantic Versioning.
 
+## [0.3.3] - 2026-03-28
+
+- Prevented iPhone form-focus zoom by normalizing mobile input, textarea, and select controls to a 16px minimum font size in the shared theme.
+
 ## [0.3.2] - 2026-03-28
 
 - Simplified the PWA icon by removing the outer border frame and shrinking the central mark so the installed mobile icon reads cleaner against the dark theme.
