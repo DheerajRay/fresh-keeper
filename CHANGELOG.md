@@ -4,6 +4,12 @@ All notable changes to this project should be documented in this file.
 
 This project starts versioning with Semantic Versioning.
 
+## [0.2.5] - 2026-03-27
+
+- Removed the top-level OpenAI helper import from the Vercel route.
+- Switched the AI helper load to a dynamic import inside `POST` so route startup no longer depends on helper bundling.
+- Preserved a lightweight GET health response for `/api/ai`.
+
 ## [0.2.4] - 2026-03-27
 
 - Reverted the Vercel AI route to the classic `req`/`res` serverless handler shape.

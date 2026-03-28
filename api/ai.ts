@@ -1,5 +1,3 @@
-import { handleAiRequest } from './_lib/openai';
-
 async function readJsonBody(req: any): Promise<any> {
   if (req.body && typeof req.body === 'object') {
     return req.body;
@@ -31,7 +29,8 @@ export default async function handler(req: any, res: any) {
     }
 
     const body = await readJsonBody(req);
-    const result = await handleAiRequest(body);
+    const mod = await import('./_lib/openai');
+    const result = await mod.handleAiRequest(body);
     res.status(result.status).json(result.body);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unhandled AI route error.';
