@@ -5,19 +5,17 @@ export const runtime = 'nodejs';
 async function readJsonBody(request: Request): Promise<any> {
   try {
     return await request.json();
-  } catch (error) {
+  } catch {
     return {};
   }
 }
 
-export default {
-  async fetch(request: Request) {
-    if (request.method !== 'POST') {
-      return Response.json({ error: 'Method not allowed.' }, { status: 405 });
-    }
+export async function GET() {
+  return Response.json({ ok: true, route: '/api/ai' }, { status: 200 });
+}
 
-    const body = await readJsonBody(request);
-    const result = await handleAiRequest(body);
-    return Response.json(result.body, { status: result.status });
-  }
-};
+export async function POST(request: Request) {
+  const body = await readJsonBody(request);
+  const result = await handleAiRequest(body);
+  return Response.json(result.body, { status: result.status });
+}

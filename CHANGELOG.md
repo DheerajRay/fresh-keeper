@@ -4,6 +4,11 @@ All notable changes to this project should be documented in this file.
 
 This project starts versioning with Semantic Versioning.
 
+## [0.2.2] - 2026-03-27
+
+- Switched the Vercel API function to named `GET` and `POST` web handlers for better platform compatibility.
+- Added a simple `/api/ai` health response for deployment verification.
+
 ## [0.2.1] - 2026-03-27
 
 - Switched the Vercel API entrypoint to a web-standard Request/Response handler.
