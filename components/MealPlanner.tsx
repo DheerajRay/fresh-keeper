@@ -441,7 +441,7 @@ const MealPlanner: React.FC = () => {
                       </div>
                       <button type="submit" disabled={isLoading} className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg flex items-center justify-center gap-3 disabled:bg-slate-300">
                           {isLoading ? <Loader2 className="animate-spin" size={20} /> : <Sparkles size={20} />}
-                          {isLoading ? "Consulting with Chef Gemini..." : "Generate Meal Ideas"}
+                          {isLoading ? "Generating meal ideas..." : "Generate Meal Ideas"}
                       </button>
                   </form>
               </div>
@@ -637,3 +637,4 @@ const MealPlanner: React.FC = () => {
 };
 
 export default MealPlanner;
+

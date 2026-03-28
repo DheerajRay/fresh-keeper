@@ -1,72 +1,62 @@
-const CACHE_NAME = 'freshkeeper-v1';
-const URLS_TO_CACHE = [
-  '/',
-  '/index.html',
-  'https://cdn.tailwindcss.com',
-  'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap'
-];
+const CACHE_NAME = 'freshkeeper-v2';
+const URLS_TO_CACHE = ['/', '/manifest.json', '/icon.svg'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => {
-        // Attempt to cache critical assets. 
-        // Note: External resources might fail if CORS is not set up, 
-        // but these CDNs generally support it.
-        return cache.addAll(URLS_TO_CACHE).catch(err => {
-            console.warn('Failed to cache some assets during install', err);
-        });
-      })
+    caches.open(CACHE_NAME).then((cache) =>
+      cache.addAll(URLS_TO_CACHE).catch((error) => {
+        console.warn('Failed to cache some assets during install', error);
+      }),
+    ),
   );
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
+    caches.keys().then((cacheNames) =>
+      Promise.all(
         cacheNames.map((cacheName) => {
           if (cacheName !== CACHE_NAME) {
             return caches.delete(cacheName);
           }
-        })
-      );
-    })
+          return Promise.resolve();
+        }),
+      ),
+    ),
   );
   self.clients.claim();
 });
 
 self.addEventListener('fetch', (event) => {
-  // Only handle GET requests
   if (event.request.method !== 'GET') return;
 
+  const url = new URL(event.request.url);
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
+  if (url.origin !== self.location.origin) return;
+
   event.respondWith(
-    caches.match(event.request)
-      .then((cachedResponse) => {
-        // Return cached response if found
-        if (cachedResponse) {
-          return cachedResponse;
+    caches.match(event.request).then((cachedResponse) => {
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+
+      return fetch(event.request).then((response) => {
+        if (!response || response.status !== 200) {
+          return response;
         }
 
-        // Otherwise fetch from network
-        return fetch(event.request).then((response) => {
-          // Check if we received a valid response
-          if (!response || response.status !== 200 || response.type !== 'basic' && response.type !== 'cors') {
-            return response;
-          }
-
-          // Clone the response because it's a stream
-          const responseToCache = response.clone();
-
-          caches.open(CACHE_NAME)
-            .then((cache) => {
-              cache.put(event.request, responseToCache);
-            });
-
-          return response;
+        const responseToCache = response.clone();
+        caches.open(CACHE_NAME).then((cache) => {
+          cache.put(event.request, responseToCache).catch(() => {
+            // Ignore cache write failures for transient browser/runtime cases.
+          });
         });
-      }).catch(() => {
-          // Fallback logic could go here (e.g., return offline.html)
-      })
+
+        return response;
+      });
+    }),
   );
 });
+
+

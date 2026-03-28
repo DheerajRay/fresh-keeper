@@ -80,85 +80,97 @@ const predictShopSchema = {
 };
 
 const shoppingSuggestionsSchema = {
-  type: 'array',
-  items: {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
-      name: { type: 'string' },
-      quantity: { type: 'integer' },
-      unit: { type: 'string' },
-      category: {
-        type: 'string',
-        enum: ['Restock', 'Expiring Soon', 'AI Suggestion', 'User Added'],
-      },
-      reason: { type: 'string' },
-      shopName: { type: 'string' },
-    },
-    required: ['name', 'quantity', 'unit', 'category', 'reason', 'shopName'],
-  },
-};
-
-const mealSuggestionsSchema = {
-  type: 'array',
-  items: {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
-      id: { type: 'string' },
-      title: { type: 'string' },
-      type: {
-        type: 'string',
-        enum: ['Breakfast', 'Brunch', 'Lunch', 'Snack', 'Dinner'],
-      },
-      description: { type: 'string' },
-      isRecipe: { type: 'boolean' },
-      expiringItemsUsed: {
-        type: 'array',
-        items: { type: 'string' },
-      },
-      prepTime: { type: 'string' },
-      difficulty: {
-        type: 'string',
-        enum: ['Easy', 'Medium', 'Hard'],
-      },
-      flavorProfile: { type: 'string' },
-      chefTip: { type: 'string' },
-      ingredients: {
-        type: 'array',
-        items: {
-          type: 'object',
-          additionalProperties: false,
-          properties: {
-            name: { type: 'string' },
-            amount: { type: 'string' },
-            inInventory: { type: 'boolean' },
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    items: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          name: { type: 'string' },
+          quantity: { type: 'integer' },
+          unit: { type: 'string' },
+          category: {
+            type: 'string',
+            enum: ['Restock', 'Expiring Soon', 'AI Suggestion', 'User Added'],
           },
-          required: ['name', 'amount', 'inInventory'],
+          reason: { type: 'string' },
+          shopName: { type: 'string' },
         },
-      },
-      instructions: {
-        type: 'array',
-        items: { type: 'string' },
+        required: ['name', 'quantity', 'unit', 'category', 'reason', 'shopName'],
       },
     },
-    required: [
-      'id',
-      'title',
-      'type',
-      'description',
-      'isRecipe',
-      'expiringItemsUsed',
-      'prepTime',
-      'difficulty',
-      'flavorProfile',
-      'chefTip',
-      'ingredients',
-      'instructions',
-    ],
   },
+  required: ['items'],
 };
-
+const mealSuggestionsSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    meals: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          id: { type: 'string' },
+          title: { type: 'string' },
+          type: {
+            type: 'string',
+            enum: ['Breakfast', 'Brunch', 'Lunch', 'Snack', 'Dinner'],
+          },
+          description: { type: 'string' },
+          isRecipe: { type: 'boolean' },
+          expiringItemsUsed: {
+            type: 'array',
+            items: { type: 'string' },
+          },
+          prepTime: { type: 'string' },
+          difficulty: {
+            type: 'string',
+            enum: ['Easy', 'Medium', 'Hard'],
+          },
+          flavorProfile: { type: 'string' },
+          chefTip: { type: 'string' },
+          ingredients: {
+            type: 'array',
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              properties: {
+                name: { type: 'string' },
+                amount: { type: 'string' },
+                inInventory: { type: 'boolean' },
+              },
+              required: ['name', 'amount', 'inInventory'],
+            },
+          },
+          instructions: {
+            type: 'array',
+            items: { type: 'string' },
+          },
+        },
+        required: [
+          'id',
+          'title',
+          'type',
+          'description',
+          'isRecipe',
+          'expiringItemsUsed',
+          'prepTime',
+          'difficulty',
+          'flavorProfile',
+          'chefTip',
+          'ingredients',
+          'instructions',
+        ],
+      },
+    },
+  },
+  required: ['meals'],
+};
 function getEnv(name: string, fallback = ''): string {
   return process.env[name] || fallback;
 }
@@ -384,7 +396,8 @@ Rules:
     maxOutputTokens: 420,
   });
 
-  return JSON.parse(extractOutputText(response));
+  const parsed = JSON.parse(extractOutputText(response));
+  return Array.isArray(parsed.items) ? parsed.items : [];
 }
 
 async function getMealSuggestions(
@@ -439,7 +452,8 @@ Rules:
     maxOutputTokens: 1800,
   });
 
-  return JSON.parse(extractOutputText(response));
+  const parsed = JSON.parse(extractOutputText(response));
+  return Array.isArray(parsed.meals) ? parsed.meals : [];
 }
 
 export async function handleAiRequest(body: AiRequestBody): Promise<HandlerResult> {
@@ -493,3 +507,5 @@ export async function handleAiRequest(body: AiRequestBody): Promise<HandlerResul
     };
   }
 }
+
+
