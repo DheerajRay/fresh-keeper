@@ -4,6 +4,18 @@ import { DEFAULT_SHOPS, SHOP_COLORS, UNIT_OPTIONS } from '../constants';
 import { InventoryItem, Shop, ShoppingItem } from '../types';
 import { getShoppingSuggestions, predictShopForItem } from '../services/openai';
 import {
+  getLocalConsumptionHistory,
+  getLocalInventory,
+  getLocalShoppingList,
+  getLocalShops,
+  hydrateShoppingList,
+  hydrateShops,
+  replaceRemoteShoppingList,
+  replaceRemoteShops,
+  setLocalShoppingList,
+  setLocalShops,
+} from '../lib/appData';
+import {
   EmptyState,
   PageHeader,
   Panel,
@@ -17,9 +29,9 @@ import {
 } from './ui';
 
 const ShoppingListManager: React.FC = () => {
-  const [shoppingList, setShoppingList] = useState<ShoppingItem[]>([]);
+  const [shoppingList, setShoppingList] = useState<ShoppingItem[]>(() => getLocalShoppingList());
   const [suggestions, setSuggestions] = useState<ShoppingItem[]>([]);
-  const [shops, setShops] = useState<Shop[]>(DEFAULT_SHOPS);
+  const [shops, setShops] = useState<Shop[]>(() => getLocalShops());
   const [isLoading, setIsLoading] = useState(false);
   const [activeShopId, setActiveShopId] = useState<string | null>(null);
   const [showStoreSheet, setShowStoreSheet] = useState(false);
@@ -30,21 +42,38 @@ const ShoppingListManager: React.FC = () => {
   const [newItemShopId, setNewItemShopId] = useState('');
   const [newShopName, setNewShopName] = useState('');
   const [newShopColor, setNewShopColor] = useState('slate');
+  const [remoteHydrated, setRemoteHydrated] = useState(false);
 
   useEffect(() => {
-    const savedList = localStorage.getItem('freshkeeper_shopping_list');
-    if (savedList) setShoppingList(JSON.parse(savedList));
-    const savedShops = localStorage.getItem('freshkeeper_shops');
-    if (savedShops) setShops(JSON.parse(savedShops));
+    let active = true;
+
+    Promise.all([hydrateShoppingList(getLocalShoppingList()), hydrateShops(getLocalShops())]).then(
+      ([remoteShoppingList, remoteShops]) => {
+        if (!active) return;
+        setShoppingList(remoteShoppingList);
+        setShops(remoteShops.length > 0 ? remoteShops : DEFAULT_SHOPS);
+        setRemoteHydrated(true);
+      },
+    );
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('freshkeeper_shopping_list', JSON.stringify(shoppingList));
-  }, [shoppingList]);
+    setLocalShoppingList(shoppingList);
+    if (remoteHydrated) {
+      void replaceRemoteShoppingList(shoppingList);
+    }
+  }, [remoteHydrated, shoppingList]);
 
   useEffect(() => {
-    localStorage.setItem('freshkeeper_shops', JSON.stringify(shops));
-  }, [shops]);
+    setLocalShops(shops);
+    if (remoteHydrated) {
+      void replaceRemoteShops(shops);
+    }
+  }, [remoteHydrated, shops]);
 
   useEffect(() => {
     if (activeShopId) setNewItemShopId(activeShopId);
@@ -59,8 +88,8 @@ const ShoppingListManager: React.FC = () => {
 
   const handleGenerateSuggestions = async () => {
     setIsLoading(true);
-    const inventory: InventoryItem[] = JSON.parse(localStorage.getItem('fridge_inventory') || '[]');
-    const history: InventoryItem[] = JSON.parse(localStorage.getItem('fridge_consumption_history') || '[]');
+    const inventory: InventoryItem[] = getLocalInventory();
+    const history: InventoryItem[] = getLocalConsumptionHistory();
     const now = Date.now();
     const expiringItems = inventory.filter((item) => {
       const daysLeft = (item.expiryDate - now) / (1000 * 60 * 60 * 24);

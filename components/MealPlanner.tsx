@@ -13,6 +13,24 @@ import { DEFAULT_SHOPS, DIETARY_OPTIONS } from '../constants';
 import { DietaryRestriction, InventoryItem, MealSuggestion, Shop, ShoppingItem } from '../types';
 import { getMealSuggestions, predictShopForItem } from '../services/openai';
 import {
+  getLocalDietaryRestrictions,
+  getLocalMealPlans,
+  getLocalMealSuggestionQueue,
+  getLocalShoppingList,
+  getLocalShops,
+  hydrateDietaryRestrictions,
+  hydrateMealPlans,
+  hydrateMealSuggestionQueue,
+  replaceRemoteDietaryRestrictions,
+  replaceRemoteMealPlans,
+  replaceRemoteMealSuggestionQueue,
+  replaceRemoteShoppingList,
+  setLocalDietaryRestrictions,
+  setLocalMealPlans,
+  setLocalMealSuggestionQueue,
+  setLocalShoppingList,
+} from '../lib/appData';
+import {
   ConfirmationDialog,
   EmptyState,
   PageHeader,
@@ -45,15 +63,16 @@ type PlannerMode = 'plan' | 'discover';
 const MealPlanner: React.FC = () => {
   const [mode, setMode] = useState<PlannerMode>('plan');
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
-  const [plans, setPlans] = useState<Record<string, MealSuggestion[]>>({});
-  const [suggestionQueue, setSuggestionQueue] = useState<MealSuggestion[]>([]);
+  const [plans, setPlans] = useState<Record<string, MealSuggestion[]>>(() => getLocalMealPlans());
+  const [suggestionQueue, setSuggestionQueue] = useState<MealSuggestion[]>(() => getLocalMealSuggestionQueue());
   const [isLoading, setIsLoading] = useState(false);
   const [isClassifying, setIsClassifying] = useState(false);
   const [selectedMeal, setSelectedMeal] = useState<MealSuggestion | null>(null);
   const [mealToPlan, setMealToPlan] = useState<MealSuggestion | null>(null);
   const [mealToReschedule, setMealToReschedule] = useState<{ meal: MealSuggestion; currentDate: string } | null>(null);
   const [craving, setCraving] = useState('');
-  const [selectedRestrictions, setSelectedRestrictions] = useState<DietaryRestriction[]>([]);
+  const [selectedRestrictions, setSelectedRestrictions] = useState<DietaryRestriction[]>(() => getLocalDietaryRestrictions());
+  const [remoteHydrated, setRemoteHydrated] = useState(false);
 
   const dates = useMemo(
     () =>
@@ -66,26 +85,46 @@ const MealPlanner: React.FC = () => {
   );
 
   useEffect(() => {
-    const savedPlans = localStorage.getItem('freshkeeper_meal_plans');
-    const savedQueue = localStorage.getItem('freshkeeper_suggestion_queue');
-    const savedRestrictions = localStorage.getItem('freshkeeper_dietary_restrictions');
-    if (savedPlans) setPlans(JSON.parse(savedPlans));
-    if (savedQueue) setSuggestionQueue(JSON.parse(savedQueue));
-    if (savedRestrictions) setSelectedRestrictions(JSON.parse(savedRestrictions));
+    let active = true;
+
+    Promise.all([
+      hydrateMealPlans(getLocalMealPlans()),
+      hydrateMealSuggestionQueue(getLocalMealSuggestionQueue()),
+      hydrateDietaryRestrictions(getLocalDietaryRestrictions()),
+    ]).then(([remotePlans, remoteQueue, remoteRestrictions]) => {
+      if (!active) return;
+      setPlans(remotePlans);
+      setSuggestionQueue(remoteQueue);
+      setSelectedRestrictions(remoteRestrictions);
+      setRemoteHydrated(true);
+    });
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('freshkeeper_meal_plans', JSON.stringify(plans));
-    checkNeedsIngredientsUpgrades();
-  }, [plans]);
+    setLocalMealPlans(plans);
+    if (remoteHydrated) {
+      void replaceRemoteMealPlans(plans);
+      checkNeedsIngredientsUpgrades();
+    }
+  }, [plans, remoteHydrated]);
 
   useEffect(() => {
-    localStorage.setItem('freshkeeper_suggestion_queue', JSON.stringify(suggestionQueue));
-  }, [suggestionQueue]);
+    setLocalMealSuggestionQueue(suggestionQueue);
+    if (remoteHydrated) {
+      void replaceRemoteMealSuggestionQueue(suggestionQueue);
+    }
+  }, [remoteHydrated, suggestionQueue]);
 
   useEffect(() => {
-    localStorage.setItem('freshkeeper_dietary_restrictions', JSON.stringify(selectedRestrictions));
-  }, [selectedRestrictions]);
+    setLocalDietaryRestrictions(selectedRestrictions);
+    if (remoteHydrated) {
+      void replaceRemoteDietaryRestrictions(selectedRestrictions);
+    }
+  }, [remoteHydrated, selectedRestrictions]);
 
   const inventory = getInventory();
 
@@ -150,14 +189,12 @@ const MealPlanner: React.FC = () => {
   const executePlan = async (meal: MealSuggestion, date: string | 'tentative') => {
     setIsClassifying(true);
     const currentInventory = getInventory();
-    const savedShops = localStorage.getItem('freshkeeper_shops');
-    const shops: Shop[] = savedShops ? JSON.parse(savedShops) : DEFAULT_SHOPS;
+    const shops: Shop[] = getLocalShops().length > 0 ? getLocalShops() : DEFAULT_SHOPS;
     const missingIngredients = getMissingIngredients(meal, currentInventory);
     const finalDate = missingIngredients.length > 0 ? 'tentative' : date;
 
     if (missingIngredients.length > 0) {
-      const savedList = localStorage.getItem('freshkeeper_shopping_list');
-      const shoppingList: ShoppingItem[] = savedList ? JSON.parse(savedList) : [];
+      const shoppingList: ShoppingItem[] = getLocalShoppingList();
       const newItems: ShoppingItem[] = await Promise.all(
         missingIngredients.map(async (ingredient) => {
           const predictedShopId = await predictShopForItem(ingredient.name, shops);
@@ -173,7 +210,9 @@ const MealPlanner: React.FC = () => {
           };
         }),
       );
-      localStorage.setItem('freshkeeper_shopping_list', JSON.stringify([...shoppingList, ...newItems]));
+      const nextShoppingList = [...shoppingList, ...newItems];
+      setLocalShoppingList(nextShoppingList);
+      void replaceRemoteShoppingList(nextShoppingList);
     }
 
     setPlans((current) => {

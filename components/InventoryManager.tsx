@@ -15,6 +15,14 @@ import { FRIDGE_ZONES, UNIT_OPTIONS } from '../constants';
 import { InventoryItem, ZoneId } from '../types';
 import { getShelfLifePrediction, identifyItemFromImage } from '../services/openai';
 import {
+  appendRemoteConsumptionEvent,
+  getLocalInventory,
+  hydrateInventory,
+  pushLocalConsumptionHistory,
+  replaceRemoteInventory,
+  setLocalInventory,
+} from '../lib/appData';
+import {
   ConfirmationDialog,
   EmptyState,
   PageHeader,
@@ -61,7 +69,7 @@ type ScanResult = {
 };
 
 const InventoryManager: React.FC = () => {
-  const [items, setItems] = useState<InventoryItem[]>([]);
+  const [items, setItems] = useState<InventoryItem[]>(() => getLocalInventory());
   const [newItemName, setNewItemName] = useState('');
   const [newItemQuantity, setNewItemQuantity] = useState(1);
   const [newItemUnit, setNewItemUnit] = useState('item');
@@ -72,16 +80,29 @@ const InventoryManager: React.FC = () => {
   const [showMapSheet, setShowMapSheet] = useState(false);
   const [activeItem, setActiveItem] = useState<InventoryItem | null>(null);
   const [warningData, setWarningData] = useState<WarningState | null>(null);
+  const [remoteHydrated, setRemoteHydrated] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem('fridge_inventory');
-    if (saved) setItems(JSON.parse(saved));
+    let active = true;
+
+    hydrateInventory(getLocalInventory()).then((remoteItems) => {
+      if (!active) return;
+      setItems(remoteItems);
+      setRemoteHydrated(true);
+    });
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('fridge_inventory', JSON.stringify(items));
-  }, [items]);
+    setLocalInventory(items);
+    if (remoteHydrated) {
+      void replaceRemoteInventory(items);
+    }
+  }, [items, remoteHydrated]);
 
   const groupedItems = useMemo(
     () =>
@@ -96,11 +117,8 @@ const InventoryManager: React.FC = () => {
   const zonesUsed = new Set(items.map((item) => item.zoneId)).size;
 
   const addToHistory = (item: InventoryItem) => {
-    const historyKey = 'fridge_consumption_history';
-    const savedHistory = localStorage.getItem(historyKey);
-    let history: InventoryItem[] = savedHistory ? JSON.parse(savedHistory) : [];
-    history = [item, ...history].slice(0, 50);
-    localStorage.setItem(historyKey, JSON.stringify(history));
+    pushLocalConsumptionHistory(item);
+    void appendRemoteConsumptionEvent(item);
   };
 
   const checkStorageOptimality = (zone: ZoneId, recommended: string | undefined) => {

@@ -1,0 +1,9 @@
+-- Deprecated bootstrap snapshot.
+--
+-- FreshKeeper now manages Supabase schema changes through versioned migrations.
+-- Use the migration files under supabase/migrations/ and push them with:
+--
+--   npm run supabase:db:push
+--
+-- Current bootstrap migration:
+--   supabase/migrations/20260329144118_init_auth_bootstrap.sql

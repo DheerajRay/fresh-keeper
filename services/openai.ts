@@ -1,12 +1,17 @@
 import { InventoryItem, MealSuggestion, ShoppingItem, Shop } from '../types';
+import { getSupabaseBrowserClient } from '../lib/supabase';
 
 const CACHE_KEY = 'freshkeeper_ai_cache_v3';
 
 async function postAi<T>(payload: Record<string, unknown>): Promise<T> {
+  const supabase = getSupabaseBrowserClient();
+  const session = supabase ? (await supabase.auth.getSession()).data.session : null;
+
   const response = await fetch('/api/ai', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
     },
     body: JSON.stringify(payload),
   });

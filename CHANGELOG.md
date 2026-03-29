@@ -4,6 +4,15 @@ All notable changes to this project should be documented in this file.
 
 This project starts versioning with Semantic Versioning.
 
+## [0.4.0] - 2026-03-29
+
+- Added Supabase browser auth with a minimal email/password account flow and a protected app shell.
+- Added a code-first Supabase workflow with CLI scripts, project config, versioned migrations, and a migration-backed bootstrap schema.
+- Applied the initial household auth bootstrap and added a second remote schema migration for inventory, shopping, meal plans, preferences, and event tables with row-level security.
+- Added a shared app-data sync layer that keeps the current local cache behavior while hydrating and mirroring signed-in household data through Supabase.
+- Connected fridge inventory, consumption history, meal plans, meal suggestion queue, dietary restrictions, shops, and shopping list state to the new sync layer.
+- Updated the auth screen copy to focus on the user task instead of backend implementation details.
+
 ## [0.3.3] - 2026-03-28
 
 - Prevented iPhone form-focus zoom by normalizing mobile input, textarea, and select controls to a 16px minimum font size in the shared theme.

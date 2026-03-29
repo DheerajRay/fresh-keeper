@@ -106,6 +106,7 @@ Important implementation details:
 - `lucide-react` for icons
 - `react-markdown` for rendering AI answers
 - OpenAI Responses API through a server-side proxy
+- Supabase Auth foundation for email/password accounts
 - Tailwind CSS via CDN in `index.html`
 - Browser `localStorage` for persistence
 - Service worker + web manifest for lightweight PWA behavior
@@ -239,13 +240,65 @@ OPENAI_MODEL_MAIN=gpt-5.4-mini
 OPENAI_MODEL_VISION=gpt-5.4-mini
 OPENAI_MODEL_MEALS=gpt-5.4-mini
 OPENAI_REASONING_EFFORT=low
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
+SUPABASE_SECRET_KEY=your_supabase_secret_key
+VITE_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
 Notes:
 
 - `OPENAI_API_KEY` is read only on the server side.
 - The model variables let you control cost by routing lighter tasks to cheaper models.
+- `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` are browser-safe.
+- `SUPABASE_SECRET_KEY` must remain server-only.
 - If no key is provided, the app still loads, but AI-dependent features will fail or fall back.
+
+### Supabase Bootstrap
+
+FreshKeeper now keeps Supabase schema changes in versioned migrations under:
+
+```text
+supabase/migrations/
+```
+
+The initial auth/bootstrap migration is:
+
+```text
+supabase/migrations/20260329144118_init_auth_bootstrap.sql
+```
+
+Code-first workflow:
+
+```bash
+npm run supabase:login
+npm run supabase:link
+npm run supabase:db:push
+```
+
+To create later schema updates:
+
+```bash
+npm run supabase:migration:new your_change_name
+```
+
+Then edit the generated SQL file in `supabase/migrations/` and push it with:
+
+```bash
+npm run supabase:db:push
+```
+
+The legacy `supabase/schema.sql` file is now only a pointer to the migration-based workflow.
+
+Recommended current remote auth setup in Supabase:
+
+- Email provider enabled
+- Email signup enabled
+- Confirm Email disabled
+- Allow new users to sign up enabled
+- Anonymous sign-ins disabled
+
+The app now includes an auth gate for email/password sign-in and sign-up, but domain data remains local-first until the sync migration lands.
 
 ### Run The App Locally
 

@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { BookOpen, ChefHat, ChevronDown, Grid2X2, Menu, Refrigerator, ShoppingCart } from 'lucide-react';
+import { BookOpen, ChefHat, ChevronDown, Grid2X2, LogOut, Menu, Refrigerator, ShoppingCart } from 'lucide-react';
+import AuthScreen from './components/AuthScreen';
 import GuideAiSearch from './components/GuideAiSearch';
 import InventoryManager from './components/InventoryManager';
 import MealPlanner from './components/MealPlanner';
@@ -7,10 +8,12 @@ import ShoppingListManager from './components/ShoppingListManager';
 import SpoilageSection from './components/SpoilageSection';
 import ZoneDetail from './components/ZoneDetail';
 import { FRIDGE_ZONES } from './constants';
+import { useAuth, AuthProvider } from './lib/auth';
 import { ZoneId } from './types';
 import {
   PageHeader,
   Panel,
+  PrimaryButton,
   SectionHeader,
   SurfaceSheet,
   cx,
@@ -18,7 +21,10 @@ import {
 
 type AppView = 'inventory' | 'meals' | 'shopping' | 'guide';
 
-const App: React.FC = () => {
+export const AppShell: React.FC<{ displayName?: string; onSignOut?: () => void }> = ({
+  displayName,
+  onSignOut,
+}) => {
   const [currentView, setCurrentView] = useState<AppView>('inventory');
   const [selectedZone, setSelectedZone] = useState<ZoneId>(ZoneId.LOWER_SHELVES);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -51,28 +57,43 @@ const App: React.FC = () => {
             </div>
           </div>
 
-          <nav className="hidden rounded-2xl border border-neutral-200 bg-transparent p-1 md:flex">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = currentView === item.view;
-              return (
-                <button
-                  key={item.view}
-                  type="button"
-                  onClick={() => setCurrentView(item.view)}
-                  className={cx(
-                    'flex items-center gap-2 rounded-2xl px-3 py-2 text-xs font-medium uppercase tracking-[0.16em] transition',
-                    isActive
-                      ? 'border border-neutral-950 bg-transparent text-neutral-950'
-                      : 'text-neutral-600 hover:text-neutral-950',
-                  )}
-                >
-                  <Icon size={14} />
-                  {item.label}
-                </button>
-              );
-            })}
-          </nav>
+          <div className="hidden items-center gap-3 md:flex">
+            <nav className="rounded-2xl border border-neutral-200 bg-transparent p-1">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = currentView === item.view;
+                return (
+                  <button
+                    key={item.view}
+                    type="button"
+                    onClick={() => setCurrentView(item.view)}
+                    className={cx(
+                      'flex items-center gap-2 rounded-2xl px-3 py-2 text-xs font-medium uppercase tracking-[0.16em] transition',
+                      isActive
+                        ? 'border border-neutral-950 bg-transparent text-neutral-950'
+                        : 'text-neutral-600 hover:text-neutral-950',
+                    )}
+                  >
+                    <Icon size={14} />
+                    {item.label}
+                  </button>
+                );
+              })}
+            </nav>
+
+            {displayName ? (
+              <div className="flex items-center gap-2 rounded-2xl border border-neutral-200 bg-neutral-50 px-3 py-2 text-xs uppercase tracking-[0.16em] text-neutral-600">
+                <span className="text-neutral-950">{displayName}</span>
+              </div>
+            ) : null}
+
+            {onSignOut ? (
+              <PrimaryButton type="button" onClick={onSignOut} className="px-3 py-2 text-xs uppercase tracking-[0.16em]">
+                <LogOut size={14} />
+                Sign out
+              </PrimaryButton>
+            ) : null}
+          </div>
 
           <div className="md:hidden">
             <button
@@ -202,14 +223,7 @@ const App: React.FC = () => {
                           {zone.temperature}
                         </span>
                       </span>
-                      <span
-                        className={cx(
-                          'text-[11px] uppercase tracking-[0.16em]',
-                          selectedZone === zone.id ? 'text-neutral-400' : 'text-neutral-400',
-                        )}
-                      >
-                        {zone.spoilageRisk}
-                      </span>
+                      <span className="text-[11px] uppercase tracking-[0.16em] text-neutral-400">{zone.spoilageRisk}</span>
                     </button>
                   ))}
                 </div>
@@ -269,6 +283,12 @@ const App: React.FC = () => {
         description="Use the floating dock for quick switching, or choose a section here when you want the full labels."
       >
         <div className="space-y-3">
+          {displayName ? (
+            <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-600">
+              Signed in as <span className="font-semibold text-neutral-950">{displayName}</span>
+            </div>
+          ) : null}
+
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentView === item.view;
@@ -295,11 +315,55 @@ const App: React.FC = () => {
               </button>
             );
           })}
+
+          {onSignOut ? (
+            <PrimaryButton
+              type="button"
+              onClick={() => {
+                setShowMobileMenu(false);
+                onSignOut();
+              }}
+              className="w-full"
+            >
+              <LogOut size={18} />
+              Sign out
+            </PrimaryButton>
+          ) : null}
         </div>
       </SurfaceSheet>
-
     </div>
   );
 };
+
+const AppBootstrap: React.FC = () => (
+  <div className="min-h-screen bg-[#f5f5f3] px-4 py-8 text-neutral-950 md:px-6 md:py-12">
+    <div className="mx-auto max-w-3xl">
+      <Panel className="p-6 md:p-8">
+        <div className="space-y-2">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-neutral-500">Supabase</p>
+          <h1 className="text-3xl font-semibold tracking-tight text-neutral-950">Connecting FreshKeeper</h1>
+          <p className="text-sm leading-6 text-neutral-600">
+            Checking your session and preparing the protected app shell.
+          </p>
+        </div>
+      </Panel>
+    </div>
+  </div>
+);
+
+const AuthenticatedApp: React.FC = () => {
+  const { status, isAuthenticated, profile, signOut } = useAuth();
+
+  if (status === 'loading') return <AppBootstrap />;
+  if (!isAuthenticated) return <AuthScreen />;
+
+  return <AppShell displayName={profile?.displayName} onSignOut={() => { void signOut(); }} />;
+};
+
+const App: React.FC = () => (
+  <AuthProvider>
+    <AuthenticatedApp />
+  </AuthProvider>
+);
 
 export default App;
