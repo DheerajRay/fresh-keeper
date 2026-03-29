@@ -10,20 +10,22 @@ describe('App shell', () => {
 
     expect(screen.getByRole('heading', { name: /My Fridge/i })).toBeInTheDocument();
 
-    await user.click(screen.getAllByRole('button', { name: /Navigation menu/i })[0]);
-    expect(screen.getByRole('heading', { name: /Navigate/i })).toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', { name: /Meal Plan.*Meals/i }));
+    await user.click(screen.getAllByRole('button', { name: /Meal Plan/i })[0]);
     expect(screen.getByRole('heading', { name: /Meal Plan/i })).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: /Guide & Tips/i }));
+    await user.click(screen.getAllByRole('button', { name: /Guide/i })[0]);
     expect(screen.getByText(/Guide and storage tips/i)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Open storage map/i })).not.toBeInTheDocument();
     expect(screen.getByText(/Open a zone to inspect it/i)).toBeInTheDocument();
     expect(screen.getAllByText(/^Freezer$/i).length).toBeGreaterThan(0);
     expect(document.querySelectorAll('details[open]')).toHaveLength(0);
 
-    await user.click(screen.getByRole('button', { name: /Shopping List/i }));
+    await user.click(screen.getAllByRole('button', { name: /Shop/i })[0]);
     expect(screen.getByText(/Suggestion intake/i)).toBeInTheDocument();
+
+    await user.click(screen.getAllByRole('button', { name: /App menu/i })[0]);
+    expect(screen.getByRole('heading', { name: /Menu/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /My Fridge.*Fridge/i })).not.toBeInTheDocument();
+    expect(screen.getByText(/^Theme$/i)).toBeInTheDocument();
   });
 });

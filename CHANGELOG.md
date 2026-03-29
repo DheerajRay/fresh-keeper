@@ -4,6 +4,11 @@ All notable changes to this project should be documented in this file.
 
 This project starts versioning with Semantic Versioning.
 
+## [0.5.2] - 2026-03-29
+
+- Restored the desktop header tabs to a proper horizontal navigation layout instead of the broken stacked rendering.
+- Simplified the app menu so it now focuses on theme and account actions rather than duplicating section switching that is already handled by the main nav and mobile dock.
+
 ## [0.5.1] - 2026-03-29
 
 - Trimmed low-value helper copy across the app shell, auth screen, inventory, meal, shopping, and guide surfaces so the interface reads cleaner and more directly.

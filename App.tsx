@@ -119,7 +119,7 @@ export const AppShell: React.FC<{ displayName?: string; onSignOut?: () => void }
           </div>
 
           <div className="hidden items-center gap-3 md:flex">
-            <nav className="rounded-2xl border border-neutral-200 bg-transparent p-1">
+            <nav className="flex items-center gap-1 rounded-2xl border border-neutral-200 bg-transparent p-1">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = currentView === item.view;
@@ -151,7 +151,7 @@ export const AppShell: React.FC<{ displayName?: string; onSignOut?: () => void }
             <button
               type="button"
               className="rounded-2xl border border-neutral-200 bg-transparent p-2 text-neutral-700"
-              aria-label="Navigation menu"
+              aria-label="App menu"
               onClick={() => setShowMenu(true)}
             >
               <Menu size={18} />
@@ -162,7 +162,7 @@ export const AppShell: React.FC<{ displayName?: string; onSignOut?: () => void }
             <button
               type="button"
               className="rounded-2xl border border-neutral-200 bg-transparent p-2 text-neutral-700"
-              aria-label="Navigation menu"
+              aria-label="App menu"
               onClick={() => setShowMenu(true)}
             >
               <Menu size={18} />
@@ -330,7 +330,7 @@ export const AppShell: React.FC<{ displayName?: string; onSignOut?: () => void }
       <SurfaceSheet
         open={showMenu}
         onClose={() => setShowMenu(false)}
-        title="Navigate"
+        title="Menu"
       >
         <div className="space-y-6">
           {displayName ? (
@@ -338,36 +338,6 @@ export const AppShell: React.FC<{ displayName?: string; onSignOut?: () => void }
               Signed in as <span className="font-semibold text-neutral-950">{displayName}</span>
             </div>
           ) : null}
-
-          <div className="space-y-3">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = currentView === item.view;
-              return (
-                <button
-                  key={`menu-${item.view}`}
-                  type="button"
-                    onClick={() => {
-                      setCurrentView(item.view);
-                      setShowThemePicker(false);
-                      setShowMenu(false);
-                    }}
-                  className={cx(
-                    'flex w-full items-center justify-between rounded-2xl border px-4 py-4 text-left transition',
-                    isActive
-                      ? 'border-neutral-950 bg-transparent text-neutral-950'
-                      : 'border-neutral-200 bg-neutral-50 text-neutral-700',
-                  )}
-                >
-                  <span className="flex items-center gap-3">
-                    <Icon size={18} />
-                    <span className="text-sm font-semibold">{item.label}</span>
-                  </span>
-                  <span className="text-[11px] uppercase tracking-[0.18em]">{item.shortLabel}</span>
-                </button>
-              );
-            })}
-          </div>
 
             <div className="space-y-3">
               <div className="space-y-1">
