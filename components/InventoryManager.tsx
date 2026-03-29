@@ -4,7 +4,6 @@ import {
   ChevronRight,
   Loader2,
   Minus,
-  MoveRight,
   Plus,
   Refrigerator,
   ScanSearch,
@@ -148,12 +147,12 @@ const InventoryManager: React.FC = () => {
     days: number;
     advice: string;
     recommendedStorage: string;
-  }) => {
+  }, zoneId: ZoneId) => {
     const now = Date.now();
     const normalizedName = newItemName.trim().toLowerCase();
     setItems((previous) => {
       const existingIndex = previous.findIndex(
-        (item) => item.name.trim().toLowerCase() === normalizedName && item.zoneId === selectedZone,
+        (item) => item.name.trim().toLowerCase() === normalizedName && item.zoneId === zoneId,
       );
 
       if (existingIndex >= 0) {
@@ -166,7 +165,7 @@ const InventoryManager: React.FC = () => {
       const newItem: InventoryItem = {
         id: crypto.randomUUID(),
         name: newItemName.trim(),
-        zoneId: selectedZone,
+        zoneId,
         addedDate: now,
         expiryDate: now + prediction.days * 24 * 60 * 60 * 1000,
         estimatedDays: prediction.days,
@@ -217,27 +216,14 @@ const InventoryManager: React.FC = () => {
         recommendedStorage: prediction.recommendedStorage,
         reasoning: prediction.advice || 'This item appears to be spoiled or past its safe date.',
         warningType: 'EXPIRED',
-        onConfirm: () => commitItem(prediction),
+        onConfirm: () => commitItem(prediction, getRecommendedZone(prediction.recommendedStorage)),
       });
       return;
     }
 
-    const optimality = checkStorageOptimality(selectedZone, prediction.recommendedStorage);
-    if (!optimality.isOptimal) {
-      setIsAdding(false);
-      setWarningData({
-        isOpen: true,
-        name: newItemName,
-        isFood: true,
-        recommendedStorage: prediction.recommendedStorage,
-        reasoning: optimality.message,
-        warningType: 'SUBOPTIMAL_ZONE',
-        onConfirm: () => commitItem(prediction),
-      });
-      return;
-    }
-
-    commitItem(prediction);
+    const autoZone = getRecommendedZone(prediction.recommendedStorage);
+    setSelectedZone(autoZone);
+    commitItem(prediction, autoZone);
   };
 
   const readImageAsBase64 = (file: File): Promise<string> =>
@@ -325,8 +311,6 @@ const InventoryManager: React.FC = () => {
       }),
     );
   };
-
-  const recommendedZone = getRecommendedZone(warningData?.recommendedStorage);
 
   return (
     <div className="space-y-8">
@@ -446,7 +430,7 @@ const InventoryManager: React.FC = () => {
           setIsAdding(false);
         }}
         title="Add to Fridge"
-        description="Start with a name or scan, confirm quantity, then choose where the item belongs."
+        description="Start with a name or scan, confirm quantity, and FreshKeeper will auto-route the item to the suggested storage zone."
         footer={
           <div className="flex flex-col gap-3">
             <PrimaryButton type="submit" form="inventory-add-form" disabled={isAdding || !newItemName.trim()}>
@@ -516,32 +500,11 @@ const InventoryManager: React.FC = () => {
             </label>
           </div>
 
-          <div className="space-y-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">Storage zone</p>
-            <div className="grid gap-2">
-              {[['Cold storage', COLD_ZONES], ['Dry storage', DRY_ZONES]].map(([label, zones]) => (
-                <div key={label as string} className="space-y-2">
-                  <p className="text-sm font-medium text-neutral-700">{label as string}</p>
-                  <div className="flex flex-wrap gap-2">
-                    {(zones as ZoneId[]).map((zoneId) => (
-                      <button
-                        key={zoneId}
-                        type="button"
-                        onClick={() => setSelectedZone(zoneId)}
-                        className={cx(
-                          'rounded-full border px-3 py-2 text-sm transition',
-                          selectedZone === zoneId
-                            ? 'border-neutral-950 bg-transparent text-neutral-950'
-                            : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-400',
-                        )}
-                      >
-                        {FRIDGE_ZONES[zoneId].name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
+          <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-neutral-500">Storage routing</p>
+            <p className="mt-2 text-sm leading-6 text-neutral-600">
+              The storage zone is selected automatically from the freshness check. You can move the item later from its detail panel if you store it somewhere else.
+            </p>
           </div>
         </form>
       </SurfaceSheet>
@@ -672,23 +635,7 @@ const InventoryManager: React.FC = () => {
           </div>
         }
         actions={
-          warningData?.warningType === 'SUBOPTIMAL_ZONE' ? (
-            <>
-              <PrimaryButton
-                type="button"
-                onClick={() => {
-                  if (recommendedZone) setSelectedZone(recommendedZone);
-                  setWarningData(null);
-                }}
-              >
-                <MoveRight size={18} />
-                Switch to better zone
-              </PrimaryButton>
-              <SecondaryButton type="button" onClick={() => warningData.onConfirm?.()}>
-                Add anyway
-              </SecondaryButton>
-            </>
-          ) : warningData?.warningType === 'EXPIRED' ? (
+          warningData?.warningType === 'EXPIRED' ? (
             <>
               <PrimaryButton type="button" onClick={() => setWarningData(null)}>
                 Discard

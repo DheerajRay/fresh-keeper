@@ -1,8 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Check, Loader2, Pencil, Plus, Settings, ShoppingBag, Sparkles, Trash2 } from 'lucide-react';
-import { DEFAULT_SHOPS, SHOP_COLORS, UNIT_OPTIONS } from '../constants';
-import { InventoryItem, Shop, ShoppingItem } from '../types';
-import { getShoppingSuggestions, predictShopForItem } from '../services/openai';
+﻿import React, { useEffect, useMemo, useState } from 'react';
+import { Check, Loader2, Pencil, Plus, ShoppingCart, Sparkles, Trash2 } from 'lucide-react';
+import { DEFAULT_SHOPS, STORE_TYPE_LABELS, STORE_TYPE_OPTIONS, UNIT_OPTIONS } from '../constants';
+import { InventoryItem, Shop, ShoppingItem, StoreType } from '../types';
+import { getShoppingSuggestions } from '../services/openai';
 import {
   getLocalConsumptionHistory,
   getLocalInventory,
@@ -15,6 +15,7 @@ import {
   setLocalShoppingList,
   setLocalShops,
 } from '../lib/appData';
+import { classifyShoppingItemStoreType, ensureDefaultShops, getDefaultShopForType, inferStoreTypeFromName } from '../lib/storeRouting';
 import {
   EmptyState,
   PageHeader,
@@ -31,9 +32,9 @@ import {
 const ShoppingListManager: React.FC = () => {
   const [shoppingList, setShoppingList] = useState<ShoppingItem[]>(() => getLocalShoppingList());
   const [suggestions, setSuggestions] = useState<ShoppingItem[]>([]);
-  const [shops, setShops] = useState<Shop[]>(() => getLocalShops());
+  const [shops, setShops] = useState<Shop[]>(() => ensureDefaultShops(getLocalShops()));
   const [isLoading, setIsLoading] = useState(false);
-  const [activeShopId, setActiveShopId] = useState<string | null>(null);
+  const [showAddSheet, setShowAddSheet] = useState(false);
   const [showStoreSheet, setShowStoreSheet] = useState(false);
   const [editingItem, setEditingItem] = useState<ShoppingItem | null>(null);
   const [newItemName, setNewItemName] = useState('');
@@ -41,7 +42,8 @@ const ShoppingListManager: React.FC = () => {
   const [newItemUnit, setNewItemUnit] = useState('item');
   const [newItemShopId, setNewItemShopId] = useState('');
   const [newShopName, setNewShopName] = useState('');
-  const [newShopColor, setNewShopColor] = useState('slate');
+  const [newShopType, setNewShopType] = useState<StoreType>('grocery');
+  const [hasTouchedShopType, setHasTouchedShopType] = useState(false);
   const [remoteHydrated, setRemoteHydrated] = useState(false);
 
   useEffect(() => {
@@ -51,7 +53,7 @@ const ShoppingListManager: React.FC = () => {
       ([remoteShoppingList, remoteShops]) => {
         if (!active) return;
         setShoppingList(remoteShoppingList);
-        setShops(remoteShops.length > 0 ? remoteShops : DEFAULT_SHOPS);
+        setShops(ensureDefaultShops(remoteShops.length > 0 ? remoteShops : DEFAULT_SHOPS));
         setRemoteHydrated(true);
       },
     );
@@ -69,22 +71,34 @@ const ShoppingListManager: React.FC = () => {
   }, [remoteHydrated, shoppingList]);
 
   useEffect(() => {
-    setLocalShops(shops);
+    const normalizedShops = ensureDefaultShops(shops);
+    setLocalShops(normalizedShops);
     if (remoteHydrated) {
-      void replaceRemoteShops(shops);
+      void replaceRemoteShops(normalizedShops);
     }
   }, [remoteHydrated, shops]);
 
   useEffect(() => {
-    if (activeShopId) setNewItemShopId(activeShopId);
-  }, [activeShopId]);
-
-  const displayedItems = useMemo(
-    () => (activeShopId ? shoppingList.filter((item) => item.shopId === activeShopId) : shoppingList),
-    [activeShopId, shoppingList],
-  );
+    if (hasTouchedShopType) return;
+    setNewShopType(inferStoreTypeFromName(newShopName));
+  }, [hasTouchedShopType, newShopName]);
 
   const checkedCount = shoppingList.filter((item) => item.isChecked).length;
+
+  const groupedShoppingList = useMemo(
+    () =>
+      STORE_TYPE_OPTIONS.map((typeOption) => ({
+        type: typeOption.value,
+        stores: ensureDefaultShops(shops)
+          .filter((shop) => shop.type === typeOption.value)
+          .map((shop) => ({
+            shop,
+            items: shoppingList.filter((item) => (item.shopId || getDefaultShopForType(shops, item.storeType || 'grocery').id) === shop.id),
+          }))
+          .filter((group) => group.items.length > 0),
+      })),
+    [shoppingList, shops],
+  );
 
   const handleGenerateSuggestions = async () => {
     setIsLoading(true);
@@ -96,21 +110,26 @@ const ShoppingListManager: React.FC = () => {
       return daysLeft <= 2 && daysLeft > -5;
     });
 
-    const heuristicSuggestions: ShoppingItem[] = expiringItems.map((item) => ({
-      id: crypto.randomUUID(),
-      name: item.name,
-      quantity: 1,
-      unit: item.unit,
-      category: 'Expiring Soon',
-      reason: 'Replacing item expiring soon',
-      isChecked: false,
-      shopId: shops[0]?.id,
-    }));
+    const heuristicSuggestions: ShoppingItem[] = expiringItems.map((item) => {
+      const storeType = classifyShoppingItemStoreType(item.name);
+      const defaultShop = getDefaultShopForType(shops, storeType);
+      return {
+        id: crypto.randomUUID(),
+        name: item.name,
+        quantity: 1,
+        unit: item.unit,
+        category: 'Expiring Soon',
+        reason: 'Replace an item expiring soon',
+        isChecked: false,
+        shopId: defaultShop.id,
+        source: 'restock',
+        storeType,
+      };
+    });
 
     const aiSuggestions = await getShoppingSuggestions(inventory, history, shops);
     const combined = [...heuristicSuggestions, ...aiSuggestions].filter(
-      (suggestion) =>
-        !shoppingList.some((existing) => existing.name.toLowerCase() === suggestion.name.toLowerCase()),
+      (suggestion) => !shoppingList.some((existing) => existing.name.toLowerCase() === suggestion.name.toLowerCase()),
     );
 
     setSuggestions(combined);
@@ -118,15 +137,12 @@ const ShoppingListManager: React.FC = () => {
   };
 
   const addSuggestionToList = (item: ShoppingItem) => {
-    setShoppingList((current) => [...current, { ...item, category: 'User Added' }]);
+    setShoppingList((current) => [...current, item]);
     setSuggestions((current) => current.filter((entry) => entry.id !== item.id));
   };
 
   const addAllSuggestions = () => {
-    setShoppingList((current) => [
-      ...current,
-      ...suggestions.map((suggestion) => ({ ...suggestion, category: 'User Added' as const })),
-    ]);
+    setShoppingList((current) => [...current, ...suggestions]);
     setSuggestions([]);
   };
 
@@ -134,41 +150,33 @@ const ShoppingListManager: React.FC = () => {
     setSuggestions((current) => current.filter((item) => item.id !== id));
   };
 
-  const addManualItem = async (event: React.FormEvent) => {
+  const addManualItem = (event: React.FormEvent) => {
     event.preventDefault();
     if (!newItemName.trim()) return;
 
-    const tempId = crypto.randomUUID();
-    const initialShopId = newItemShopId || undefined;
+    const storeType = newItemShopId
+      ? shops.find((shop) => shop.id === newItemShopId)?.type || 'grocery'
+      : classifyShoppingItemStoreType(newItemName);
+    const routedShop = newItemShopId ? shops.find((shop) => shop.id === newItemShopId) : getDefaultShopForType(shops, storeType);
+
     const newItem: ShoppingItem = {
-      id: tempId,
+      id: crypto.randomUUID(),
       name: newItemName.trim(),
       quantity: newItemQuantity,
       unit: newItemUnit,
       category: 'User Added',
       isChecked: false,
-      shopId: initialShopId,
+      shopId: routedShop?.id,
+      source: 'manual',
+      storeType,
     };
 
     setShoppingList((current) => [...current, newItem]);
-    const itemName = newItemName;
     setNewItemName('');
     setNewItemQuantity(1);
     setNewItemUnit('item');
-    if (!activeShopId) setNewItemShopId('');
-
-    if (!initialShopId && shops.length > 0) {
-      try {
-        const predictedShopId = await predictShopForItem(itemName, shops);
-        if (predictedShopId) {
-          setShoppingList((current) =>
-            current.map((item) => (item.id === tempId ? { ...item, shopId: predictedShopId } : item)),
-          );
-        }
-      } catch (error) {
-        console.warn('Auto-shop classification failed', error);
-      }
-    }
+    setNewItemShopId('');
+    setShowAddSheet(false);
   };
 
   const toggleCheck = (id: string) => {
@@ -188,27 +196,44 @@ const ShoppingListManager: React.FC = () => {
   const addShop = () => {
     if (!newShopName.trim()) return;
     setShops((current) => [
-      ...current,
+      ...ensureDefaultShops(current),
       {
         id: crypto.randomUUID(),
         name: newShopName.trim(),
-        color: newShopColor,
+        type: newShopType,
+        isDefault: false,
       },
     ]);
     setNewShopName('');
+    setNewShopType('grocery');
+    setHasTouchedShopType(false);
   };
 
   const deleteShop = (id: string) => {
+    const targetShop = shops.find((shop) => shop.id === id);
+    if (!targetShop || targetShop.isDefault) return;
+
+    const fallbackShop = getDefaultShopForType(shops, targetShop.type);
     setShops((current) => current.filter((shop) => shop.id !== id));
     setShoppingList((current) =>
-      current.map((item) => (item.shopId === id ? { ...item, shopId: undefined } : item)),
+      current.map((item) => (item.shopId === id ? { ...item, shopId: fallbackShop.id, storeType: fallbackShop.type } : item)),
     );
-    if (activeShopId === id) setActiveShopId(null);
   };
 
   const saveEditedItem = () => {
     if (!editingItem || !editingItem.name.trim()) return;
-    setShoppingList((current) => current.map((item) => (item.id === editingItem.id ? editingItem : item)));
+    const nextStore = shops.find((shop) => shop.id === editingItem.shopId) || getDefaultShopForType(shops, editingItem.storeType || 'grocery');
+    setShoppingList((current) =>
+      current.map((item) =>
+        item.id === editingItem.id
+          ? {
+              ...editingItem,
+              shopId: nextStore.id,
+              storeType: nextStore.type,
+            }
+          : item,
+      ),
+    );
     setEditingItem(null);
   };
 
@@ -217,15 +242,18 @@ const ShoppingListManager: React.FC = () => {
       <PageHeader
         eyebrow="Shopping"
         title="Shopping List"
-        description="Keep the working list primary. Suggestions feed into it, store filters stay lightweight, and store management moves into a secondary panel."
+        description="Collect discover-driven ingredients and manual adds in one list, then route them by store type and store."
         action={
           <div className="flex flex-wrap gap-2">
-            <PrimaryButton type="button" onClick={handleGenerateSuggestions} disabled={isLoading}>
+            <PrimaryButton type="button" onClick={() => setShowAddSheet(true)}>
+              <Plus size={18} />
+              Add item
+            </PrimaryButton>
+            <SecondaryButton type="button" onClick={handleGenerateSuggestions} disabled={isLoading}>
               {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}
               {isLoading ? 'Thinking' : 'Generate suggestions'}
-            </PrimaryButton>
+            </SecondaryButton>
             <SecondaryButton type="button" onClick={() => setShowStoreSheet(true)}>
-              <Settings size={18} />
               Stores
             </SecondaryButton>
           </div>
@@ -237,66 +265,14 @@ const ShoppingListManager: React.FC = () => {
           { label: 'List items', value: shoppingList.length },
           { label: 'Suggestions', value: suggestions.length },
           { label: 'Checked off', value: checkedCount },
-          { label: 'Stores', value: shops.length },
         ]}
       />
 
       <div className="space-y-5">
         <Panel className="p-4 md:p-5">
           <SectionHeader
-            title="Add an item"
-            description="Keep manual entry short. If you do not choose a store, classification runs quietly in the background."
-          />
-
-          <form onSubmit={addManualItem} className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_120px_160px_180px_auto]">
-            <input
-              type="text"
-              value={newItemName}
-              onChange={(event) => setNewItemName(event.target.value)}
-              placeholder="Milk, apples, yogurt"
-              className="min-h-[52px] rounded-2xl border border-neutral-200 bg-neutral-50 px-4 text-sm outline-none transition focus:border-neutral-950"
-            />
-            <input
-              type="number"
-              min="1"
-              value={newItemQuantity}
-              onChange={(event) => setNewItemQuantity(Math.max(1, parseInt(event.target.value, 10) || 1))}
-              className="min-h-[52px] rounded-2xl border border-neutral-200 bg-neutral-50 px-4 text-sm outline-none transition focus:border-neutral-950"
-            />
-            <select
-              value={newItemUnit}
-              onChange={(event) => setNewItemUnit(event.target.value)}
-              className="min-h-[52px] rounded-2xl border border-neutral-200 bg-neutral-50 px-4 text-sm outline-none transition focus:border-neutral-950"
-            >
-              {UNIT_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <select
-              value={newItemShopId}
-              onChange={(event) => setNewItemShopId(event.target.value)}
-              className="min-h-[52px] rounded-2xl border border-neutral-200 bg-neutral-50 px-4 text-sm outline-none transition focus:border-neutral-950"
-            >
-              <option value="">Any store</option>
-              {shops.map((shop) => (
-                <option key={shop.id} value={shop.id}>
-                  {shop.name}
-                </option>
-              ))}
-            </select>
-            <PrimaryButton type="submit" disabled={!newItemName.trim()} className="min-h-[52px]">
-              <Plus size={18} />
-              Add
-            </PrimaryButton>
-          </form>
-        </Panel>
-
-        <Panel className="p-4 md:p-5">
-          <SectionHeader
-            title="Store filter"
-            description="Treat stores as a list filter, not a separate layout."
+            title="Store routing"
+            description="Items stay grouped by store type first, then by the specific store handling them."
             action={
               checkedCount > 0 ? (
                 <SecondaryButton type="button" onClick={clearChecked}>
@@ -306,104 +282,87 @@ const ShoppingListManager: React.FC = () => {
             }
           />
 
-          <div className="mt-5 space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">
-              Store filter
-            </label>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => setActiveShopId(null)}
-                className={cx(
-                  'rounded-full border px-3 py-2 text-sm transition',
-                  activeShopId === null
-                    ? 'border-neutral-950 bg-transparent text-neutral-950'
-                    : 'border-neutral-200 bg-white text-neutral-700',
-                )}
-              >
-                All items
-              </button>
-              {shops.map((shop) => (
-                <button
-                  key={shop.id}
-                  type="button"
-                  onClick={() => setActiveShopId(shop.id)}
-                  className={cx(
-                    'rounded-full border px-3 py-2 text-sm transition',
-                    activeShopId === shop.id
-                      ? 'border-neutral-950 bg-transparent text-neutral-950'
-                      : 'border-neutral-200 bg-white text-neutral-700',
-                  )}
-                >
-                  {shop.name}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-6 space-y-3">
-            {displayedItems.length === 0 ? (
+          <div className="mt-6 space-y-5">
+            {groupedShoppingList.every((group) => group.stores.length === 0) ? (
               <EmptyState
                 title="No items in this list"
-                description="Add items manually or generate suggestions from your inventory and consumption history."
+                description="Add items manually or generate suggestions from your inventory and recent use patterns."
               />
             ) : (
-              displayedItems.map((item) => (
-                <div
-                  key={item.id}
-                  className={cx(
-                    'border px-4 py-4 transition',
-                    item.isChecked
-                      ? 'border-neutral-200 bg-neutral-100 text-neutral-500'
-                      : 'border-neutral-200 bg-white text-neutral-900 hover:border-neutral-400',
-                  )}
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-3">
-                      <button
-                        type="button"
-                        onClick={() => toggleCheck(item.id)}
-                        className={cx(
-                          'mt-0.5 flex h-6 w-6 items-center justify-center rounded-full border transition',
-                          item.isChecked
-                            ? 'border-neutral-950 bg-transparent text-neutral-950'
-                            : 'border-neutral-300 bg-white text-transparent',
-                        )}
-                        aria-label={`Mark ${item.name} as ${item.isChecked ? 'unchecked' : 'checked'}`}
-                      >
-                        <Check size={14} />
-                      </button>
-                      <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className={cx('text-sm font-semibold', item.isChecked && 'line-through')}>{item.name}</p>
-                          <span className="rounded-full border border-neutral-300 px-2.5 py-1 text-[11px] text-neutral-500">
-                            {item.quantity} {item.unit}
-                          </span>
-                          {item.shopId ? (
-                            <span className="rounded-full border border-neutral-300 px-2.5 py-1 text-[11px] text-neutral-500">
-                              {shops.find((shop) => shop.id === item.shopId)?.name}
-                            </span>
-                          ) : null}
-                        </div>
-                        {item.reason ? <p className="mt-2 text-sm text-neutral-500">{item.reason}</p> : null}
+              groupedShoppingList.map((group) => (
+                <div key={group.type} className="space-y-3">
+                  <div className="border-b border-neutral-200 pb-2">
+                    <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-neutral-500">
+                      {STORE_TYPE_LABELS[group.type]}
+                    </h3>
+                  </div>
+
+                  {group.stores.map(({ shop, items }) => (
+                    <div key={shop.id} className="space-y-3">
+                      <div className="flex items-center justify-between text-sm text-neutral-500">
+                        <span className="font-semibold text-neutral-950">{shop.name}</span>
+                        <span>{items.length} items</span>
+                      </div>
+                      <div className="space-y-3">
+                        {items.map((item) => (
+                          <div
+                            key={item.id}
+                            className={cx(
+                              'border px-4 py-4 transition',
+                              item.isChecked
+                                ? 'border-neutral-200 bg-neutral-100 text-neutral-500'
+                                : 'border-neutral-200 bg-white text-neutral-900 hover:border-neutral-400',
+                            )}
+                          >
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex items-start gap-3">
+                                <button
+                                  type="button"
+                                  onClick={() => toggleCheck(item.id)}
+                                  className={cx(
+                                    'mt-0.5 flex h-6 w-6 items-center justify-center rounded-full border transition',
+                                    item.isChecked
+                                      ? 'border-neutral-950 bg-transparent text-neutral-950'
+                                      : 'border-neutral-300 bg-white text-transparent',
+                                  )}
+                                  aria-label={`Mark ${item.name} as ${item.isChecked ? 'unchecked' : 'checked'}`}
+                                >
+                                  <Check size={14} />
+                                </button>
+                                <div>
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <p className={cx('text-sm font-semibold', item.isChecked && 'line-through')}>{item.name}</p>
+                                    <span className="rounded-full border border-neutral-300 px-2.5 py-1 text-[11px] text-neutral-500">
+                                      {item.quantity} {item.unit}
+                                    </span>
+                                    <span className="rounded-full border border-neutral-300 px-2.5 py-1 text-[11px] text-neutral-500">
+                                      {item.source === 'discover_recipe' ? 'Discover' : item.source === 'restock' ? 'Restock' : 'Manual'}
+                                    </span>
+                                  </div>
+                                  {item.reason ? <p className="mt-2 text-sm text-neutral-500">{item.reason}</p> : null}
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <SecondaryButton type="button" onClick={() => setEditingItem(item)} className="px-3 py-2">
+                                  <span className="sr-only">Edit {item.name}</span>
+                                  <Pencil size={16} />
+                                </SecondaryButton>
+                                <SecondaryButton
+                                  type="button"
+                                  onClick={() => removeShoppingItem(item.id)}
+                                  className="px-3 py-2"
+                                  aria-label={`Remove ${item.name}`}
+                                >
+                                  <Trash2 size={16} />
+                                </SecondaryButton>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-2">
-                      <SecondaryButton type="button" onClick={() => setEditingItem(item)} className="px-3 py-2">
-                        <span className="sr-only">Edit {item.name}</span>
-                        <Pencil size={16} />
-                      </SecondaryButton>
-                      <SecondaryButton
-                        type="button"
-                        onClick={() => removeShoppingItem(item.id)}
-                        className="px-3 py-2"
-                        aria-label={`Remove ${item.name}`}
-                      >
-                        <Trash2 size={16} />
-                      </SecondaryButton>
-                    </div>
-                  </div>
+                  ))}
                 </div>
               ))
             )}
@@ -427,7 +386,7 @@ const ShoppingListManager: React.FC = () => {
             {suggestions.length === 0 ? (
               <EmptyState
                 title="No suggestions waiting"
-                description="Generate suggestions when you want the system to scan expiring items and history for restock ideas."
+                description="Generate suggestions when you want the system to scan expiring items and recent history for restock ideas."
               />
             ) : (
               suggestions.map((item) => (
@@ -440,7 +399,7 @@ const ShoppingListManager: React.FC = () => {
                           {item.quantity} {item.unit}
                         </span>
                         <span className="rounded-full border border-neutral-300 px-2.5 py-1 text-[11px] text-neutral-500">
-                          {item.category}
+                          {STORE_TYPE_LABELS[item.storeType || 'grocery']}
                         </span>
                       </div>
                       {item.reason ? <p className="mt-2 text-sm text-neutral-500">{item.reason}</p> : null}
@@ -473,32 +432,99 @@ const ShoppingListManager: React.FC = () => {
       </div>
 
       <SurfaceSheet
+        open={showAddSheet}
+        onClose={() => setShowAddSheet(false)}
+        title="Add shopping item"
+        description="Keep manual entry short. If you do not choose a store, classification routes the item in the background."
+        footer={
+          <PrimaryButton type="submit" form="shopping-add-form" disabled={!newItemName.trim()}>
+            <Plus size={18} />
+            Add
+          </PrimaryButton>
+        }
+      >
+        <form id="shopping-add-form" onSubmit={addManualItem} className="space-y-4">
+          <label className="block space-y-2">
+            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">Item name</span>
+            <input
+              type="text"
+              value={newItemName}
+              onChange={(event) => setNewItemName(event.target.value)}
+              placeholder="Milk, apples, yogurt"
+              className="min-h-[52px] w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 text-sm outline-none transition focus:border-neutral-950"
+            />
+          </label>
+
+          <div className="grid gap-4 sm:grid-cols-[120px_1fr]">
+            <label className="block space-y-2">
+              <span className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">Quantity</span>
+              <input
+                type="number"
+                min="1"
+                value={newItemQuantity}
+                onChange={(event) => setNewItemQuantity(Math.max(1, parseInt(event.target.value, 10) || 1))}
+                className="min-h-[52px] w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 text-sm outline-none transition focus:border-neutral-950"
+              />
+            </label>
+
+            <label className="block space-y-2">
+              <span className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">Unit</span>
+              <select
+                value={newItemUnit}
+                onChange={(event) => setNewItemUnit(event.target.value)}
+                className="min-h-[52px] w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 text-sm outline-none transition focus:border-neutral-950"
+              >
+                {UNIT_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <label className="block space-y-2">
+            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">Store</span>
+            <select
+              value={newItemShopId}
+              onChange={(event) => setNewItemShopId(event.target.value)}
+              className="min-h-[52px] w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 text-sm outline-none transition focus:border-neutral-950"
+            >
+              <option value="">Auto-route by store type</option>
+              {shops.map((shop) => (
+                <option key={shop.id} value={shop.id}>
+                  {shop.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        </form>
+      </SurfaceSheet>
+
+      <SurfaceSheet
         open={showStoreSheet}
         onClose={() => setShowStoreSheet(false)}
         title="Store management"
-        description="Stores are lightweight labels for routing and filtering. Keep them secondary."
+        description="Keep default store types in place, then add custom stores that map into one of those routes."
       >
         <div className="space-y-6">
           <div className="space-y-3">
-            {shops.map((shop) => {
-              const theme = getShopTheme(shop.color);
-              return (
-                <div key={shop.id} className="flex items-center justify-between rounded-3xl border border-neutral-200 bg-neutral-50 px-4 py-4">
-                  <div className="flex items-center gap-3">
-                    <span className={cx('h-3 w-3 rounded-full', theme)} />
-                    <span className="text-sm font-medium text-neutral-900">{shop.name}</span>
-                  </div>
-                  <SecondaryButton
-                    type="button"
-                    onClick={() => deleteShop(shop.id)}
-                    disabled={shops.length <= 1}
-                    aria-label={`Delete ${shop.name}`}
-                  >
-                    <Trash2 size={16} />
-                  </SecondaryButton>
+            {shops.map((shop) => (
+              <div key={shop.id} className="flex items-center justify-between rounded-3xl border border-neutral-200 bg-neutral-50 px-4 py-4">
+                <div>
+                  <p className="text-sm font-medium text-neutral-900">{shop.name}</p>
+                  <p className="mt-1 text-xs text-neutral-500">{STORE_TYPE_LABELS[shop.type]}{shop.isDefault ? ' · Default' : ''}</p>
                 </div>
-              );
-            })}
+                <SecondaryButton
+                  type="button"
+                  onClick={() => deleteShop(shop.id)}
+                  disabled={shop.isDefault}
+                  aria-label={`Delete ${shop.name}`}
+                >
+                  <Trash2 size={16} />
+                </SecondaryButton>
+              </div>
+            ))}
           </div>
 
           <Panel className="bg-neutral-50 p-4">
@@ -512,11 +538,18 @@ const ShoppingListManager: React.FC = () => {
               />
 
               <SegmentedControl
-                value={newShopColor}
-                onChange={setNewShopColor}
-                options={SHOP_COLORS.map((color) => ({ value: color.value, label: color.label }))}
+                value={newShopType}
+                onChange={(value) => {
+                  setHasTouchedShopType(true);
+                  setNewShopType(value as StoreType);
+                }}
+                options={STORE_TYPE_OPTIONS.map((option) => ({ value: option.value, label: option.label }))}
                 className="w-full overflow-x-auto"
               />
+
+              <p className="text-sm text-neutral-500">
+                Auto-suggested route: <span className="text-neutral-950">{STORE_TYPE_LABELS[newShopType]}</span>
+              </p>
 
               <PrimaryButton type="button" onClick={addShop} disabled={!newShopName.trim()}>
                 Add store
@@ -530,7 +563,7 @@ const ShoppingListManager: React.FC = () => {
         open={Boolean(editingItem)}
         onClose={() => setEditingItem(null)}
         title="Edit shopping item"
-        description="Update quantity, unit, and optional store without leaving the list."
+        description="Update quantity, unit, and store routing without leaving the list."
         footer={
           <PrimaryButton type="button" onClick={saveEditedItem} disabled={!editingItem?.name.trim()}>
             Save changes
@@ -583,12 +616,16 @@ const ShoppingListManager: React.FC = () => {
               <span className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">Store</span>
               <select
                 value={editingItem.shopId || ''}
-                onChange={(event) =>
-                  setEditingItem({ ...editingItem, shopId: event.target.value || undefined })
-                }
+                onChange={(event) => {
+                  const nextShop = shops.find((shop) => shop.id === event.target.value);
+                  setEditingItem({
+                    ...editingItem,
+                    shopId: event.target.value || undefined,
+                    storeType: nextShop?.type || editingItem.storeType,
+                  });
+                }}
                 className="w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm outline-none transition focus:border-neutral-950"
               >
-                <option value="">Any store</option>
                 {shops.map((shop) => (
                   <option key={shop.id} value={shop.id}>
                     {shop.name}
@@ -602,10 +639,5 @@ const ShoppingListManager: React.FC = () => {
     </div>
   );
 };
-
-export function getShopTheme(colorValue: string) {
-  const color = SHOP_COLORS.find((entry) => entry.value === colorValue) || SHOP_COLORS[0];
-  return color.bg.replace('100', '400');
-}
 
 export default ShoppingListManager;

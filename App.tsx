@@ -1,7 +1,6 @@
-import React, { useMemo, useState } from 'react';
-import { BookOpen, ChefHat, ChevronDown, Grid2X2, LogOut, Menu, Refrigerator, ShoppingCart } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { BookOpen, Check, ChefHat, ChevronDown, Grid2X2, LogOut, Menu, Refrigerator, ShoppingCart } from 'lucide-react';
 import AuthScreen from './components/AuthScreen';
-import GuideAiSearch from './components/GuideAiSearch';
 import InventoryManager from './components/InventoryManager';
 import MealPlanner from './components/MealPlanner';
 import ShoppingListManager from './components/ShoppingListManager';
@@ -9,7 +8,8 @@ import SpoilageSection from './components/SpoilageSection';
 import ZoneDetail from './components/ZoneDetail';
 import { FRIDGE_ZONES } from './constants';
 import { useAuth, AuthProvider } from './lib/auth';
-import { ZoneId } from './types';
+import { ThemeProvider, useTheme } from './lib/theme';
+import { ThemeName, ZoneId } from './types';
 import {
   PageHeader,
   Panel,
@@ -21,13 +21,73 @@ import {
 
 type AppView = 'inventory' | 'meals' | 'shopping' | 'guide';
 
+type ThemeOption = {
+  value: ThemeName;
+  label: string;
+  description: string;
+  preview: { page: string; accent: string; text: string };
+};
+
+const THEME_OPTIONS: ThemeOption[] = [
+  {
+    value: 'dark',
+    label: 'Dark Mode',
+    description: 'Black base with white highlight.',
+    preview: { page: '#050608', accent: '#f5f5f5', text: '#f5f5f5' },
+  },
+  {
+    value: 'light',
+    label: 'Light Mode',
+    description: 'Light base with dark highlight.',
+    preview: { page: '#f5f5f3', accent: '#090b10', text: '#090b10' },
+  },
+  {
+    value: 'zen',
+    label: 'Zen Mode',
+    description: 'Dark base with a calm yellow accent.',
+    preview: { page: '#0a0b08', accent: '#d8b84f', text: '#f6f2dc' },
+  },
+  {
+    value: 'banana',
+    label: 'Banana Mode',
+    description: 'Light base with a warm yellow accent.',
+    preview: { page: '#fffdf3', accent: '#d6b728', text: '#231d08' },
+  },
+  {
+    value: 'arctic',
+    label: 'Arctic Mode',
+    description: 'Cool light surfaces with icy blue accents.',
+    preview: { page: '#eff5fb', accent: '#7aa7d8', text: '#1f2d3d' },
+  },
+  {
+    value: 'summer',
+    label: 'Summer Mode',
+    description: 'Warm light surfaces with soft coral-yellow highlights.',
+    preview: { page: '#fff7ef', accent: '#e8a04d', text: '#3a2410' },
+  },
+  {
+    value: 'pitch_black',
+    label: 'Pitch Black Mode',
+    description: 'Deep black with restrained gray highlights.',
+    preview: { page: '#010101', accent: '#5e6672', text: '#b8bec7' },
+  },
+  {
+    value: 'red',
+    label: 'Red Mode',
+    description: 'Dark base with a restrained red accent.',
+    preview: { page: '#090405', accent: '#b64a57', text: '#f2d7db' },
+  },
+];
+
 export const AppShell: React.FC<{ displayName?: string; onSignOut?: () => void }> = ({
   displayName,
   onSignOut,
 }) => {
+  const { theme, setTheme } = useTheme();
   const [currentView, setCurrentView] = useState<AppView>('inventory');
   const [selectedZone, setSelectedZone] = useState<ZoneId>(ZoneId.LOWER_SHELVES);
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [showThemePicker, setShowThemePicker] = useState(false);
 
   const navItems = useMemo(
     () => [
@@ -41,12 +101,16 @@ export const AppShell: React.FC<{ displayName?: string; onSignOut?: () => void }
 
   const guideZoneList = Object.values(FRIDGE_ZONES);
 
+  useEffect(() => {
+    if (!showMenu) setShowThemePicker(false);
+  }, [showMenu]);
+
   return (
     <div className="min-h-screen bg-[#f5f5f3] text-neutral-950">
       <header className="sticky top-0 z-50 border-b border-neutral-200 bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 md:px-6">
           <div className="flex items-center gap-3">
-            <div className="rounded-2xl border border-neutral-200 bg-neutral-950 p-2 text-white">
+            <div className="rounded-2xl border border-neutral-950 bg-transparent p-2 text-neutral-950">
               <Grid2X2 size={18} />
             </div>
             <div>
@@ -82,17 +146,19 @@ export const AppShell: React.FC<{ displayName?: string; onSignOut?: () => void }
             </nav>
 
             {displayName ? (
-              <div className="flex items-center gap-2 rounded-2xl border border-neutral-200 bg-neutral-50 px-3 py-2 text-xs uppercase tracking-[0.16em] text-neutral-600">
+              <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-3 py-2 text-xs uppercase tracking-[0.16em] text-neutral-600">
                 <span className="text-neutral-950">{displayName}</span>
               </div>
             ) : null}
 
-            {onSignOut ? (
-              <PrimaryButton type="button" onClick={onSignOut} className="px-3 py-2 text-xs uppercase tracking-[0.16em]">
-                <LogOut size={14} />
-                Sign out
-              </PrimaryButton>
-            ) : null}
+            <button
+              type="button"
+              className="rounded-2xl border border-neutral-200 bg-transparent p-2 text-neutral-700"
+              aria-label="Navigation menu"
+              onClick={() => setShowMenu(true)}
+            >
+              <Menu size={18} />
+            </button>
           </div>
 
           <div className="md:hidden">
@@ -100,7 +166,7 @@ export const AppShell: React.FC<{ displayName?: string; onSignOut?: () => void }
               type="button"
               className="rounded-2xl border border-neutral-200 bg-transparent p-2 text-neutral-700"
               aria-label="Navigation menu"
-              onClick={() => setShowMobileMenu(true)}
+              onClick={() => setShowMenu(true)}
             >
               <Menu size={18} />
             </button>
@@ -117,23 +183,20 @@ export const AppShell: React.FC<{ displayName?: string; onSignOut?: () => void }
             <PageHeader
               eyebrow="Reference"
               title="Guide and storage tips"
-              description="Search storage guidance and review zone rules in one reference flow."
+              description="Review storage zones and spoilage rules in one reference flow."
             />
-
-            <GuideAiSearch />
 
             <div className="md:hidden">
               <Panel className="p-4">
                 <SectionHeader
                   title="Storage zones"
-                  description="Use one accordion list so the zone details stay attached to the zone you opened."
+                  description="Open only the zones you need so the reference stays compact."
                 />
                 <div className="mt-4 space-y-2">
                   {guideZoneList.map((zone) => (
                     <details
                       key={`mobile-zone-${zone.id}`}
                       className="border border-neutral-200 bg-white"
-                      open={selectedZone === zone.id}
                       onToggle={(event) => {
                         if ((event.currentTarget as HTMLDetailsElement).open) setSelectedZone(zone.id);
                       }}
@@ -143,11 +206,8 @@ export const AppShell: React.FC<{ displayName?: string; onSignOut?: () => void }
                           <span className="block text-sm font-semibold text-neutral-950">{zone.name}</span>
                           <span className="mt-1 block text-xs text-neutral-500">{zone.temperature}</span>
                         </span>
-                        <span className="flex items-center gap-3">
-                          <span className="text-[11px] uppercase tracking-[0.16em] text-neutral-400">
-                            {zone.spoilageRisk}
-                          </span>
-                          <ChevronDown size={16} className="text-neutral-500" />
+                        <span className="text-[11px] uppercase tracking-[0.16em] text-neutral-400">
+                          {zone.spoilageRisk}
                         </span>
                       </summary>
                       <div className="border-t border-neutral-200 px-4 py-4">
@@ -217,7 +277,7 @@ export const AppShell: React.FC<{ displayName?: string; onSignOut?: () => void }
                         <span
                           className={cx(
                             'mt-1 block text-xs',
-                            selectedZone === zone.id ? 'text-neutral-300' : 'text-neutral-500',
+                            selectedZone === zone.id ? 'text-neutral-500' : 'text-neutral-500',
                           )}
                         >
                           {zone.temperature}
@@ -247,7 +307,7 @@ export const AppShell: React.FC<{ displayName?: string; onSignOut?: () => void }
 
       <footer className="hidden border-t border-neutral-200 bg-white md:block">
         <div className="mx-auto max-w-7xl px-4 py-8 text-sm text-neutral-600 md:px-6">
-          FreshKeeper keeps inventory, meal planning, shopping, and storage guidance in one local workflow.
+          FreshKeeper keeps inventory, meal planning, shopping, and storage guidance in one connected workflow.
         </div>
       </footer>
 
@@ -277,50 +337,133 @@ export const AppShell: React.FC<{ displayName?: string; onSignOut?: () => void }
       </nav>
 
       <SurfaceSheet
-        open={showMobileMenu}
-        onClose={() => setShowMobileMenu(false)}
+        open={showMenu}
+        onClose={() => setShowMenu(false)}
         title="Navigate"
-        description="Use the floating dock for quick switching, or choose a section here when you want the full labels."
+        description="Switch sections, change theme, and keep account actions in one place."
       >
-        <div className="space-y-3">
+        <div className="space-y-6">
           {displayName ? (
             <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-600">
               Signed in as <span className="font-semibold text-neutral-950">{displayName}</span>
             </div>
           ) : null}
 
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = currentView === item.view;
-            return (
-              <button
-                key={`mobile-${item.view}`}
-                type="button"
-                onClick={() => {
-                  setCurrentView(item.view);
-                  setShowMobileMenu(false);
-                }}
-                className={cx(
-                  'flex w-full items-center justify-between rounded-2xl border px-4 py-4 text-left transition',
-                  isActive
-                    ? 'border-neutral-950 bg-transparent text-neutral-950'
-                    : 'border-neutral-200 bg-neutral-50 text-neutral-700',
-                )}
-              >
-                <span className="flex items-center gap-3">
-                  <Icon size={18} />
-                  <span className="text-sm font-semibold">{item.label}</span>
-                </span>
-                <span className="text-[11px] uppercase tracking-[0.18em]">{item.shortLabel}</span>
-              </button>
-            );
-          })}
+          <div className="space-y-3">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = currentView === item.view;
+              return (
+                <button
+                  key={`menu-${item.view}`}
+                  type="button"
+                    onClick={() => {
+                      setCurrentView(item.view);
+                      setShowThemePicker(false);
+                      setShowMenu(false);
+                    }}
+                  className={cx(
+                    'flex w-full items-center justify-between rounded-2xl border px-4 py-4 text-left transition',
+                    isActive
+                      ? 'border-neutral-950 bg-transparent text-neutral-950'
+                      : 'border-neutral-200 bg-neutral-50 text-neutral-700',
+                  )}
+                >
+                  <span className="flex items-center gap-3">
+                    <Icon size={18} />
+                    <span className="text-sm font-semibold">{item.label}</span>
+                  </span>
+                  <span className="text-[11px] uppercase tracking-[0.18em]">{item.shortLabel}</span>
+                </button>
+              );
+            })}
+          </div>
+
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-neutral-500">Theme</p>
+                <p className="text-sm text-neutral-600">Keep the picker collapsed until you want to switch modes.</p>
+              </div>
+              <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-3">
+                <button
+                  type="button"
+                  onClick={() => setShowThemePicker((current) => !current)}
+                  className="flex w-full items-center justify-between gap-3 border border-neutral-200 bg-white px-3 py-3 text-left transition hover:border-neutral-950"
+                  aria-expanded={showThemePicker}
+                  aria-haspopup="listbox"
+                >
+                  <span className="min-w-0">
+                    <span className="block text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+                      Current theme
+                    </span>
+                    <span className="mt-1 block truncate text-sm font-semibold text-neutral-950">
+                      {THEME_OPTIONS.find((option) => option.value === theme)?.label}
+                    </span>
+                  </span>
+                  <span className="flex items-center gap-2">
+                    <span
+                      aria-hidden="true"
+                      className="h-2.5 w-2.5 flex-none rounded-full border"
+                      style={{
+                        backgroundColor: THEME_OPTIONS.find((option) => option.value === theme)?.preview.accent,
+                        borderColor: THEME_OPTIONS.find((option) => option.value === theme)?.preview.text,
+                      }}
+                    />
+                    <ChevronDown size={14} className={cx('transition', showThemePicker ? 'rotate-180' : '')} />
+                  </span>
+                </button>
+                {showThemePicker ? (
+                  <div
+                    role="listbox"
+                    className="mt-2 max-h-64 overflow-y-auto border border-neutral-200 bg-white p-2"
+                  >
+                    <div className="space-y-1">
+                      {THEME_OPTIONS.map((option) => {
+                        const isActive = theme === option.value;
+                        return (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => {
+                              setTheme(option.value);
+                              setShowThemePicker(false);
+                            }}
+                            className={cx(
+                              'flex w-full items-center justify-between gap-3 border px-3 py-2 text-left transition',
+                              isActive
+                                ? 'border-neutral-950 bg-neutral-50 text-neutral-950'
+                                : 'border-transparent bg-transparent text-neutral-700 hover:border-neutral-200 hover:bg-neutral-50',
+                            )}
+                          >
+                            <span className="min-w-0">
+                              <span className="block text-sm font-semibold">{option.label}</span>
+                              <span className="mt-0.5 block text-xs text-neutral-500">{option.description}</span>
+                            </span>
+                            <span className="flex items-center gap-2">
+                              <span
+                                aria-hidden="true"
+                                className="h-2.5 w-2.5 flex-none rounded-full border"
+                                style={{ backgroundColor: option.preview.accent, borderColor: option.preview.text }}
+                              />
+                              {isActive ? <Check size={14} className="text-neutral-950" /> : null}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : null}
+                <p className="mt-2 text-xs leading-5 text-neutral-600">
+                  {THEME_OPTIONS.find((option) => option.value === theme)?.description}
+                </p>
+              </div>
+            </div>
 
           {onSignOut ? (
             <PrimaryButton
               type="button"
               onClick={() => {
-                setShowMobileMenu(false);
+                setShowMenu(false);
                 onSignOut();
               }}
               className="w-full"
@@ -340,10 +483,10 @@ const AppBootstrap: React.FC = () => (
     <div className="mx-auto max-w-3xl">
       <Panel className="p-6 md:p-8">
         <div className="space-y-2">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-neutral-500">Supabase</p>
-          <h1 className="text-3xl font-semibold tracking-tight text-neutral-950">Connecting FreshKeeper</h1>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-neutral-500">FreshKeeper</p>
+          <h1 className="text-3xl font-semibold tracking-tight text-neutral-950">Loading your account</h1>
           <p className="text-sm leading-6 text-neutral-600">
-            Checking your session and preparing the protected app shell.
+            Checking your session, theme, and household workspace.
           </p>
         </div>
       </Panel>
@@ -362,7 +505,9 @@ const AuthenticatedApp: React.FC = () => {
 
 const App: React.FC = () => (
   <AuthProvider>
-    <AuthenticatedApp />
+    <ThemeProvider>
+      <AuthenticatedApp />
+    </ThemeProvider>
   </AuthProvider>
 );
 

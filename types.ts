@@ -38,11 +38,27 @@ export interface InventoryItem {
   recommendedStorage?: string;
 }
 
+export type ThemeName =
+  | 'dark'
+  | 'light'
+  | 'zen'
+  | 'banana'
+  | 'arctic'
+  | 'summer'
+  | 'pitch_black'
+  | 'red';
+
+export type StoreType = 'grocery' | 'mall' | 'amazon_specialty';
+
 export interface Shop {
   id: string;
   name: string;
-  color: string;
+  type: StoreType;
+  color?: string;
+  isDefault?: boolean;
 }
+
+export type ShoppingItemSource = 'manual' | 'discover_recipe' | 'planner_gap' | 'restock';
 
 export interface ShoppingItem {
   id: string;
@@ -53,6 +69,8 @@ export interface ShoppingItem {
   reason?: string;
   isChecked: boolean;
   shopId?: string;
+  source?: ShoppingItemSource;
+  storeType?: StoreType;
 }
 
 // --- MEAL PLANNING TYPES ---
@@ -66,7 +84,7 @@ export interface RecipeIngredient {
   inInventory: boolean;
 }
 
-export interface MealSuggestion {
+export interface MealIdeaBase {
   id: string;
   title: string;
   type: MealType;
@@ -81,7 +99,23 @@ export interface MealSuggestion {
   flavorProfile?: string;
 }
 
+export interface PlanIdea extends MealIdeaBase {
+  source?: 'plan_bank';
+  inventoryMatchScore: number;
+  missingIngredientCount: number;
+}
+
+export interface DiscoveredMeal extends MealIdeaBase {
+  source?: 'discover';
+}
+
+export interface AssignedMeal extends MealIdeaBase {
+  source?: 'plan_bank' | 'discover';
+}
+
+export type MealSuggestion = PlanIdea | DiscoveredMeal | AssignedMeal;
+
 export interface DailyMealPlan {
   date: string; // ISO string
-  meals: MealSuggestion[];
+  meals: AssignedMeal[];
 }

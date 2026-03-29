@@ -1,4 +1,4 @@
-import { ZoneId, ZoneData, Shop } from './types';
+import { StoreType, ZoneId, ZoneData, Shop } from './types';
 import { Thermometer, Wind, Droplets, AlertTriangle } from 'lucide-react';
 
 export const UNIT_OPTIONS = [
@@ -23,19 +23,29 @@ export const UNIT_OPTIONS = [
   { value: 'ml', label: 'ml' },
 ];
 
-export const SHOP_COLORS = [
-  { label: 'Slate', value: 'slate', bg: 'bg-slate-100', text: 'text-slate-700', border: 'border-slate-300', ring: 'ring-slate-500' },
-  { label: 'Stone', value: 'stone', bg: 'bg-stone-100', text: 'text-stone-700', border: 'border-stone-300', ring: 'ring-stone-500' },
-  { label: 'Zinc', value: 'zinc', bg: 'bg-zinc-100', text: 'text-zinc-700', border: 'border-zinc-300', ring: 'ring-zinc-500' },
-  { label: 'Neutral', value: 'neutral', bg: 'bg-neutral-100', text: 'text-neutral-700', border: 'border-neutral-300', ring: 'ring-neutral-500' },
-  { label: 'Gray', value: 'gray', bg: 'bg-gray-100', text: 'text-gray-700', border: 'border-gray-300', ring: 'ring-gray-500' },
+export const STORE_TYPE_OPTIONS: Array<{ label: string; value: StoreType; description: string }> = [
+  { label: 'Grocery', value: 'grocery', description: 'Nearby or walkable daily shopping.' },
+  { label: 'Mall', value: 'mall', description: 'Car, delivery, or a larger store trip.' },
+  { label: 'Amazon / Specialty', value: 'amazon_specialty', description: 'Hard-to-find or specialty items.' },
 ];
 
 export const DEFAULT_SHOPS: Shop[] = [
-  { id: 'shop_default_1', name: 'Grocery Store', color: 'slate' },
-  { id: 'shop_default_2', name: 'Costco / Bulk', color: 'stone' },
-  { id: 'shop_default_3', name: 'Farmer\'s Market', color: 'zinc' }
+  { id: 'shop_default_grocery', name: 'Grocery', type: 'grocery', isDefault: true },
+  { id: 'shop_default_mall', name: 'Mall', type: 'mall', isDefault: true },
+  { id: 'shop_default_amazon_specialty', name: 'Amazon / Specialty', type: 'amazon_specialty', isDefault: true },
 ];
+
+export const STORE_TYPE_LABELS: Record<StoreType, string> = {
+  grocery: 'Grocery',
+  mall: 'Mall',
+  amazon_specialty: 'Amazon / Specialty',
+};
+
+export const STORE_TYPE_DESCRIPTIONS: Record<StoreType, string> = {
+  grocery: 'Nearby or walkable daily shopping.',
+  mall: 'A larger errand, car trip, or delivery order.',
+  amazon_specialty: 'Far-away, specialty, or hard-to-find ingredients.',
+};
 
 export const DIETARY_OPTIONS: { value: string, label: string }[] = [
   { value: 'None', label: 'None' },

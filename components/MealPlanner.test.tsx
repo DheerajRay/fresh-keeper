@@ -2,10 +2,12 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import MealPlanner, { enrichMeals, getInventory, getMissingIngredients } from './MealPlanner';
-import { getMealSuggestions, predictShopForItem } from '../services/openai';
+import { getDiscoverMealIdeas, getPlanMealIdeas } from '../services/openai';
 import { ZoneId } from '../types';
 
 vi.mock('../services/openai', () => ({
+  getPlanMealIdeas: vi.fn(),
+  getDiscoverMealIdeas: vi.fn(),
   getMealSuggestions: vi.fn(),
   predictShopForItem: vi.fn(),
 }));
@@ -54,28 +56,28 @@ describe('MealPlanner', () => {
     ).toBe(true);
   });
 
-  it('generates meal ideas and routes missing ingredients to shopping when saved', async () => {
+  it('builds an inventory-backed plan bank and schedules an idea to a date', async () => {
     const user = userEvent.setup();
-    vi.mocked(getMealSuggestions).mockResolvedValue([
+    vi.mocked(getPlanMealIdeas).mockResolvedValue([
       {
-        id: 'meal-1',
+        id: 'plan-1',
         title: 'Spinach Egg Bowl',
         type: 'Lunch',
-        description: 'Quick lunch idea',
+        description: 'Uses your eggs and spinach.',
         isRecipe: true,
         expiringItemsUsed: ['spinach'],
         prepTime: '15 min',
         difficulty: 'Easy',
         flavorProfile: 'Savory',
         chefTip: 'Season at the end.',
+        inventoryMatchScore: 100,
+        missingIngredientCount: 0,
         ingredients: [
           { name: 'Eggs', amount: '2', inInventory: true },
-          { name: 'Milk', amount: '1 cup', inInventory: false },
+          { name: 'Spinach', amount: '1 cup', inInventory: true },
         ],
-        instructions: ['Whisk eggs.', 'Cook and serve.'],
       },
     ]);
-    vi.mocked(predictShopForItem).mockResolvedValue('shop_default_1');
 
     localStorage.setItem(
       'fridge_inventory',
@@ -90,310 +92,117 @@ describe('MealPlanner', () => {
           quantity: 6,
           unit: 'item',
         },
+        {
+          id: 'inv-2',
+          name: 'Spinach',
+          zoneId: ZoneId.CRISPER_DRAWER,
+          addedDate: 1,
+          expiryDate: Date.now() + 86400000,
+          estimatedDays: 2,
+          quantity: 1,
+          unit: 'bag',
+        },
       ]),
     );
 
-    const { unmount } = render(<MealPlanner />);
-
-    await user.click(screen.getByRole('button', { name: /^Discover$/i }));
-    await user.click(screen.getByRole('button', { name: /generate meal ideas/i }));
+    render(<MealPlanner />);
 
     expect(await screen.findByText('Spinach Egg Bowl')).toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', { name: /^Save$/i }));
-    await user.click(screen.getAllByRole('button', { name: /needs ingredients/i }).at(-1)!);
+    await user.click(screen.getByRole('button', { name: /Schedule/i }));
+    await user.click(screen.getAllByRole('button', { name: /, /i })[0]);
 
     await waitFor(() => {
-      const shoppingList = JSON.parse(localStorage.getItem('freshkeeper_shopping_list') || '[]');
-      expect(shoppingList).toHaveLength(1);
-      expect(shoppingList[0].name).toBe('Milk');
+      const savedPlans = JSON.parse(localStorage.getItem('freshkeeper_meal_plans') || '{}');
+      const today = new Date().toISOString().split('T')[0];
+      expect(savedPlans[today]?.some((meal: { title: string }) => meal.title === 'Spinach Egg Bowl')).toBe(true);
     });
-
-    const savedPlans = JSON.parse(localStorage.getItem('freshkeeper_meal_plans') || '{}');
-    expect(savedPlans.tentative).toHaveLength(1);
-    expect(savedPlans.tentative[0].title).toBe('Spinach Egg Bowl');
-    expect(window.alert).toHaveBeenCalled();
   });
 
-  it('renders the default plan state, opens recipe details, and reschedules meals', async () => {
+  it('keeps discover separate and sends only missing ingredients to shopping', async () => {
     const user = userEvent.setup();
-
-    localStorage.setItem(
-      'freshkeeper_meal_plans',
-      JSON.stringify({
-        [new Date().toISOString().split('T')[0]]: [
-          {
-            id: 'meal-2',
-            title: 'Tomato Pasta',
-            type: 'Dinner',
-            description: 'Simple dinner',
-            isRecipe: true,
-            expiringItemsUsed: [],
-            prepTime: '20 min',
-            difficulty: 'Easy',
-            ingredients: [{ name: 'Tomatoes', amount: '2', inInventory: true }],
-            instructions: ['Cook pasta.', 'Add tomatoes.'],
-          },
-        ],
-      }),
-    );
-
-    const { unmount } = render(<MealPlanner />);
-
-    expect(screen.getByText(/Weekly plan/i)).toBeInTheDocument();
-    expect(screen.getByText('Tomato Pasta')).toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', { name: /^View$/i }));
-    expect(await screen.findByText(/Cook pasta/i)).toBeInTheDocument();
-    await user.click(screen.getByLabelText(/close panel/i));
-
-    await user.click(screen.getByRole('button', { name: /^Move$/i }));
-    const scheduleButtons = screen.getAllByRole('button', { name: /, /i });
-    await user.click(scheduleButtons[0]);
-
-    await user.click(screen.getByRole('button', { name: /Remove Tomato Pasta/i }));
-    expect(screen.queryByText('Tomato Pasta')).not.toBeInTheDocument();
-
-    expect(localStorage.getItem('freshkeeper_meal_plans')).not.toContain('Tomato Pasta');
-  });
-
-  it('supports discovery queue cleanup and dietary filter selection', async () => {
-    const user = userEvent.setup();
-    vi.mocked(getMealSuggestions).mockResolvedValue([
+    vi.mocked(getPlanMealIdeas).mockResolvedValue([]);
+    vi.mocked(getDiscoverMealIdeas).mockResolvedValue([
       {
-        id: 'meal-3',
-        title: 'Fruit Bowl',
-        type: 'Breakfast',
-        description: 'Fresh and easy',
+        id: 'discover-1',
+        title: 'Miso Noodle Bowl',
+        type: 'Dinner',
+        description: 'Comforting and savory.',
         isRecipe: true,
-        expiringItemsUsed: ['berries'],
-        ingredients: [{ name: 'Berries', amount: '1 cup', inInventory: true }],
-        instructions: ['Serve cold.'],
+        expiringItemsUsed: [],
+        prepTime: '20 min',
+        difficulty: 'Medium',
+        flavorProfile: 'Umami',
+        chefTip: 'Finish with scallions.',
+        ingredients: [
+          { name: 'Noodles', amount: '200 g', inInventory: true },
+          { name: 'Miso paste', amount: '2 tbsp', inInventory: false },
+          { name: 'Scallions', amount: '2', inInventory: false },
+        ],
+        instructions: ['Boil noodles.', 'Build broth.', 'Serve hot.'],
       },
     ]);
 
-    render(<MealPlanner />);
-
-    await user.click(screen.getByRole('button', { name: /^Discover$/i }));
-    await user.click(screen.getByRole('button', { name: /^Vegan$/i }));
-    await user.click(screen.getByRole('button', { name: /^Vegan$/i }));
-    await user.click(screen.getByRole('button', { name: /generate meal ideas/i }));
-
-    expect(await screen.findByText('Fruit Bowl')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: /Remove Fruit Bowl from queue/i }));
-    expect(screen.getByText(/No ideas yet/i)).toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', { name: /generate meal ideas/i }));
-    expect(await screen.findByText('Fruit Bowl')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: /Clear queue/i }));
-    expect(screen.getByText(/No ideas yet/i)).toBeInTheDocument();
-  });
-
-  it('moves ready meals out of needs ingredients and supports direct planning flows', async () => {
-    const user = userEvent.setup();
-    const today = new Date().toISOString().split('T')[0];
     localStorage.setItem(
       'fridge_inventory',
       JSON.stringify([
         {
           id: 'inv-1',
-          name: 'Tomatoes',
-          zoneId: ZoneId.LOWER_SHELVES,
+          name: 'Noodles',
+          zoneId: ZoneId.PANTRY,
           addedDate: 1,
           expiryDate: Date.now() + 86400000,
-          estimatedDays: 2,
-          quantity: 2,
-          unit: 'item',
+          estimatedDays: 30,
+          quantity: 1,
+          unit: 'box',
         },
       ]),
     );
-    localStorage.setItem(
-      'freshkeeper_meal_plans',
-      JSON.stringify({
-        tentative: [
-          {
-            id: 'meal-ready',
-            title: 'Tomato Soup',
-            type: 'Dinner',
-            description: 'Soup night',
-            isRecipe: true,
-            expiringItemsUsed: [],
-            ingredients: [{ name: 'Tomatoes', amount: '2', inInventory: false }],
-            instructions: ['Blend'],
-          },
-        ],
-      }),
-    );
-    vi.mocked(getMealSuggestions).mockResolvedValue([
-      {
-        id: 'meal-direct',
-        title: 'Egg Toast',
-        type: 'Breakfast',
-        description: 'Fast breakfast',
-        isRecipe: true,
-        expiringItemsUsed: [],
-        chefTip: 'Use good bread.',
-        ingredients: [
-          { name: 'Eggs', amount: '2', inInventory: true },
-          { name: 'Olive oil', amount: '1 tbsp', inInventory: false },
-        ],
-        instructions: ['Toast bread.', 'Cook eggs.'],
-      },
-    ]);
 
     render(<MealPlanner />);
-
-    expect(await screen.findByText('Tomato Soup')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: /Queue Needs Ingredients/i }));
-    expect(screen.getByText(/No meals waiting on ingredients/i)).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: /Fri \d+/i }));
 
     await user.click(screen.getByRole('button', { name: /^Discover$/i }));
-    await user.click(screen.getByRole('button', { name: /^Vegan$/i }));
-    await user.click(screen.getByRole('button', { name: /^None$/i }));
-    await user.type(screen.getByPlaceholderText(/Healthy Japanese dinner/i), 'quick breakfast');
+    await user.type(screen.getByPlaceholderText(/Healthy Japanese dinner/i), 'comforting');
     await user.click(screen.getByRole('button', { name: /Generate meal ideas/i }));
 
-    expect(await screen.findByText('Egg Toast')).toBeInTheDocument();
-    await user.click(screen.getAllByRole('button', { name: /^View$/i }).at(-1)!);
-    expect(screen.getByText(/Staple/i)).toBeInTheDocument();
-    expect(screen.getByText(/Chef tip/i)).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: /Save to plan/i }));
-    await user.click(screen.getAllByRole('button', { name: /, /i })[0]);
+    expect(await screen.findByText('Miso Noodle Bowl')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Add missing/i }));
 
-    await user.click(screen.getByRole('button', { name: /^Plan$/i }));
-
-    const savedPlans = JSON.parse(localStorage.getItem('freshkeeper_meal_plans') || '{}');
-    expect(savedPlans[today]?.some((meal: { title: string }) => meal.title === 'Tomato Soup')).toBe(true);
-    expect(
-      Object.values(savedPlans)
-        .flat()
-        .some((meal: any) => meal?.title === 'Egg Toast'),
-    ).toBe(true);
-    expect(window.alert).toHaveBeenCalled();
+    await waitFor(() => {
+      const shoppingList = JSON.parse(localStorage.getItem('freshkeeper_shopping_list') || '[]');
+      expect(shoppingList).toHaveLength(2);
+      expect(shoppingList.map((item: { name: string }) => item.name)).toEqual(
+        expect.arrayContaining(['Miso paste', 'Scallions']),
+      );
+    });
   });
 
-  it('supports closing the move dialog and sending an existing meal to needs ingredients', async () => {
-    const user = userEvent.setup();
-    const today = new Date().toISOString().split('T')[0];
-
-    localStorage.setItem(
-      'freshkeeper_meal_plans',
-      JSON.stringify({
-        [today]: [
-          {
-            id: 'meal-keep',
-            title: 'Veg Bowl',
-            type: 'Lunch',
-            description: 'Keep it simple',
-            isRecipe: true,
-            expiringItemsUsed: [],
-            ingredients: [{ name: 'Rice', amount: '1 bowl', inInventory: true }],
-            instructions: ['Serve.'],
-          },
-        ],
-      }),
-    );
-
-    render(<MealPlanner />);
-
-    await user.click(screen.getByRole('button', { name: /^Move$/i }));
-    const overlays = document.querySelectorAll('.fixed.inset-0');
-    await user.click(overlays[0] as HTMLElement);
-    expect(screen.queryByText(/Choose a day for/i)).not.toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', { name: /^Move$/i }));
-    await user.click(screen.getAllByRole('button', { name: /needs ingredients/i }).at(-1)!);
-
-    const savedPlans = JSON.parse(localStorage.getItem('freshkeeper_meal_plans') || '{}');
-    expect(savedPlans[today] || []).toHaveLength(0);
-    expect(savedPlans.tentative?.some((meal: { title: string }) => meal.title === 'Veg Bowl')).toBe(true);
-  });
-
-  it('covers direct-save alerts, tentative-save alerts, empty-state discovery, and duplicate reschedule protection', async () => {
+  it('shows assigned meals in plan mode and lets the user move them', async () => {
     const user = userEvent.setup();
     const today = new Date().toISOString().split('T')[0];
     const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-    vi.mocked(getMealSuggestions).mockResolvedValue([
-      {
-        id: 'meal-ready-1',
-        title: 'Oat Bowl',
-        type: 'Breakfast',
-        description: 'Simple bowl',
-        isRecipe: true,
-        expiringItemsUsed: [],
-        ingredients: [{ name: 'Oats', amount: '1 cup', inInventory: true }],
-        instructions: ['Serve.'],
-      },
-      {
-        id: 'meal-ready-2',
-        title: 'Yogurt Bowl',
-        type: 'Breakfast',
-        description: 'Cold bowl',
-        isRecipe: true,
-        expiringItemsUsed: [],
-        ingredients: [{ name: 'Yogurt', amount: '1 cup', inInventory: true }],
-        instructions: ['Serve cold.'],
-      },
-    ]);
-
-    localStorage.setItem(
-      'fridge_inventory',
-      JSON.stringify([
-        { id: 'inv-oats', name: 'Oats' },
-        { id: 'inv-yogurt', name: 'Yogurt' },
-      ]),
-    );
-
-    render(<MealPlanner />);
-
-    expect(screen.getByText(/No meals on this day/i)).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: /Explore ideas/i }));
-    expect(screen.getByRole('button', { name: /^Discover$/i })).toHaveClass('border-neutral-950');
-
-    await user.click(screen.getByRole('button', { name: /Generate meal ideas/i }));
-    expect(await screen.findByText('Oat Bowl')).toBeInTheDocument();
-
-    await user.click(screen.getAllByRole('button', { name: /^Save$/i })[0]);
-    await user.click(screen.getAllByRole('button', { name: /, /i })[0]);
-    expect(window.alert).toHaveBeenCalledWith('Oat Bowl added to your meal plan.');
-
-    await user.click(screen.getAllByRole('button', { name: /^Save$/i })[0]);
-    await user.click(screen.getAllByRole('button', { name: /needs ingredients/i }).at(-1)!);
-    expect(window.alert).toHaveBeenCalledWith('Added to Needs Ingredients.');
-
     localStorage.setItem(
       'freshkeeper_meal_plans',
       JSON.stringify({
         [today]: [
           {
-            id: 'dup-meal',
-            title: 'Duplicate Soup',
+            id: 'assigned-1',
+            title: 'Tomato Pasta',
             type: 'Dinner',
-            description: 'Soup',
+            description: 'Simple dinner',
             isRecipe: true,
             expiringItemsUsed: [],
-            ingredients: [],
-            instructions: ['Heat.'],
-          },
-        ],
-        [tomorrow]: [
-          {
-            id: 'dup-meal',
-            title: 'Duplicate Soup',
-            type: 'Dinner',
-            description: 'Soup',
-            isRecipe: true,
-            expiringItemsUsed: [],
-            ingredients: [],
-            instructions: ['Heat.'],
+            ingredients: [{ name: 'Tomatoes', amount: '2', inInventory: true }],
+            instructions: ['Cook pasta.', 'Add tomatoes.'],
+            source: 'plan_bank',
           },
         ],
       }),
     );
 
     render(<MealPlanner />);
+
+    expect(screen.getByText('Tomato Pasta')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /^Move$/i }));
     await user.click(
       screen.getByRole('button', {
@@ -401,8 +210,8 @@ describe('MealPlanner', () => {
       }),
     );
 
-    const movedPlans = JSON.parse(localStorage.getItem('freshkeeper_meal_plans') || '{}');
-    expect(movedPlans[today] || []).toHaveLength(0);
-    expect(movedPlans[tomorrow]).toHaveLength(1);
+    const savedPlans = JSON.parse(localStorage.getItem('freshkeeper_meal_plans') || '{}');
+    expect(savedPlans[today] || []).toHaveLength(0);
+    expect(savedPlans[tomorrow]?.some((meal: { title: string }) => meal.title === 'Tomato Pasta')).toBe(true);
   });
 });

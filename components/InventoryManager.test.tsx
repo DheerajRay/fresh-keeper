@@ -184,31 +184,19 @@ describe('InventoryManager', () => {
     expect(await screen.findByText('Old fish')).toBeInTheDocument();
   });
 
-  it('handles storage mismatch by switching zones and supports map/detail actions', async () => {
+  it('auto-routes pantry items during add and still shows mismatch guidance after manual moves', async () => {
     const user = userEvent.setup();
-    vi.mocked(getShelfLifePrediction)
-      .mockResolvedValueOnce({
-        days: 4,
-        advice: 'Store in pantry.',
-        isFood: true,
-        recommendedStorage: 'PANTRY',
-      })
-      .mockResolvedValueOnce({
-        days: 4,
-        advice: 'Store in pantry.',
-        isFood: true,
-        recommendedStorage: 'PANTRY',
-      });
+    vi.mocked(getShelfLifePrediction).mockResolvedValue({
+      days: 4,
+      advice: 'Store in pantry.',
+      isFood: true,
+      recommendedStorage: 'PANTRY',
+    });
 
     render(<InventoryManager />);
 
     await user.click(screen.getByRole('button', { name: /add to fridge/i }));
     await user.type(screen.getByPlaceholderText(/Eggs, basil/i), 'Bread');
-    await user.click(screen.getByRole('button', { name: /save item/i }));
-
-    expect(await screen.findByText(/Storage mismatch/i)).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: /Switch to better zone/i }));
-
     await user.click(screen.getByRole('button', { name: /save item/i }));
     const breadLabels = await screen.findAllByText('Bread');
     const breadRow = breadLabels
@@ -220,7 +208,8 @@ describe('InventoryManager', () => {
     }
 
     await user.click(within(breadRow).getByRole('button', { name: /^Details$/i }));
-    await user.click(screen.getByRole('button', { name: /Pantry/i }));
+    await user.click(screen.getByRole('button', { name: /Lower Shelves/i }));
+    expect(screen.getByText(/keeps better in dry storage/i)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /remove from inventory/i }));
 
     await waitFor(() => {

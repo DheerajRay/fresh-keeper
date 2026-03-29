@@ -4,6 +4,17 @@ All notable changes to this project should be documented in this file.
 
 This project starts versioning with Semantic Versioning.
 
+## [0.5.0] - 2026-03-29
+
+- Reworked the signed-in app around household-backed Supabase persistence for fridge, meal, shopping, dietary preference, and theme state, with code-first migrations and synced local fallback behavior.
+- Split meal generation into inventory-backed `Plan` ideas and broader `Discover` ideas, so calendar planning now uses the current fridge while discover results can export only missing ingredients into shopping.
+- Reframed shopping around type-first routing with default `Grocery`, `Mall`, and `Amazon / Specialty` buckets, custom store typing, grouped suggestions, and a compact add-item sheet instead of a permanent entry panel.
+- Simplified the guide flow by removing the separate storage-question panel from the page, keeping the mobile zone reference as a closed-by-default accordion, and removing duplicated storage-map behavior.
+- Updated inventory add behavior to auto-apply the recommended storage zone from the shelf-life lookup, leaving manual zone changes for later detail editing when needed.
+- Added an account-backed theme system with `Dark`, `Light`, `Zen`, `Banana`, `Arctic`, `Summer`, `Pitch Black`, and `Red` modes, plus a compact in-menu theme picker and tokenized theme styling across the shell.
+- Reduced the overly mechanical feel with lighter icon use, more compact menu interactions, and a tighter mobile-first shell.
+- Expanded and refreshed tests for the new meal, shopping, inventory, guide, and theme-adjacent flows, and revalidated lint, test, and build after the refactor.
+
 ## [0.4.0] - 2026-03-29
 
 - Added Supabase browser auth with a minimal email/password account flow and a protected app shell.

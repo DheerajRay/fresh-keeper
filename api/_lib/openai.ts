@@ -3,8 +3,9 @@ const CACHE_KEY = 'freshkeeper_ai_cache_v3';
 
 const STORAGE_OPTIONS = ['FRIDGE', 'FREEZER', 'PANTRY', 'COUNTER', 'KITCHEN_SHELVES', 'OTHER'] as const;
 const ZONE_OPTIONS = ['UPPER_SHELVES', 'LOWER_SHELVES', 'CRISPER_DRAWER', 'DOOR', 'FREEZER', 'PANTRY', 'KITCHEN_SHELVES', 'COUNTER'] as const;
+const STORE_TYPES = ['grocery', 'mall', 'amazon_specialty'] as const;
 
-type Shop = { id: string; name: string; color?: string };
+type Shop = { id: string; name: string; type?: string };
 type InventoryItem = {
   id?: string;
   name: string;
@@ -13,21 +14,15 @@ type InventoryItem = {
   expiryDate?: number;
 };
 
-type AiAction =
-  | 'ask_fridge_ai'
-  | 'shelf_life'
-  | 'identify_image'
-  | 'predict_shop'
-  | 'shopping_suggestions'
-  | 'meal_suggestions';
-
 type AiRequestBody =
   | { action: 'ask_fridge_ai'; query: string }
   | { action: 'shelf_life'; itemName: string; zoneName: string }
   | { action: 'identify_image'; base64Image: string }
   | { action: 'predict_shop'; itemName: string; availableShops: Shop[] }
   | { action: 'shopping_suggestions'; inventory: InventoryItem[]; history: InventoryItem[]; availableShops: Shop[] }
-  | { action: 'meal_suggestions'; inventory: InventoryItem[]; forDate: string; preference?: string; dietaryRestrictions?: string[] };
+  | { action: 'plan_inventory_ideas'; inventory: InventoryItem[]; forDate: string; dietaryRestrictions?: string[]; historySummary?: string }
+  | { action: 'discover_meal_ideas'; inventory: InventoryItem[]; preference?: string; dietaryRestrictions?: string[]; historySummary?: string }
+  | { action: 'meal_suggestions'; inventory: InventoryItem[]; preference?: string; dietaryRestrictions?: string[]; historySummary?: string };
 
 type HandlerResult = {
   status: number;
@@ -98,14 +93,80 @@ const shoppingSuggestionsSchema = {
           },
           reason: { type: 'string' },
           shopName: { type: 'string' },
+          source: {
+            type: 'string',
+            enum: ['manual', 'discover_recipe', 'planner_gap', 'restock'],
+          },
+          storeType: {
+            type: 'string',
+            enum: [...STORE_TYPES],
+          },
         },
-        required: ['name', 'quantity', 'unit', 'category', 'reason', 'shopName'],
+        required: ['name', 'quantity', 'unit', 'category', 'reason', 'shopName', 'source', 'storeType'],
       },
     },
   },
   required: ['items'],
 };
-const mealSuggestionsSchema = {
+
+const planIdeasSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    ideas: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          id: { type: 'string' },
+          title: { type: 'string' },
+          type: { type: 'string', enum: ['Breakfast', 'Brunch', 'Lunch', 'Snack', 'Dinner'] },
+          description: { type: 'string' },
+          isRecipe: { type: 'boolean' },
+          expiringItemsUsed: { type: 'array', items: { type: 'string' } },
+          prepTime: { type: 'string' },
+          difficulty: { type: 'string', enum: ['Easy', 'Medium', 'Hard'] },
+          flavorProfile: { type: 'string' },
+          chefTip: { type: 'string' },
+          inventoryMatchScore: { type: 'integer' },
+          missingIngredientCount: { type: 'integer' },
+          ingredients: {
+            type: 'array',
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              properties: {
+                name: { type: 'string' },
+                amount: { type: 'string' },
+                inInventory: { type: 'boolean' },
+              },
+              required: ['name', 'amount', 'inInventory'],
+            },
+          },
+        },
+        required: [
+          'id',
+          'title',
+          'type',
+          'description',
+          'isRecipe',
+          'expiringItemsUsed',
+          'prepTime',
+          'difficulty',
+          'flavorProfile',
+          'chefTip',
+          'inventoryMatchScore',
+          'missingIngredientCount',
+          'ingredients',
+        ],
+      },
+    },
+  },
+  required: ['ideas'],
+};
+
+const discoverMealsSchema = {
   type: 'object',
   additionalProperties: false,
   properties: {
@@ -117,21 +178,12 @@ const mealSuggestionsSchema = {
         properties: {
           id: { type: 'string' },
           title: { type: 'string' },
-          type: {
-            type: 'string',
-            enum: ['Breakfast', 'Brunch', 'Lunch', 'Snack', 'Dinner'],
-          },
+          type: { type: 'string', enum: ['Breakfast', 'Brunch', 'Lunch', 'Snack', 'Dinner'] },
           description: { type: 'string' },
           isRecipe: { type: 'boolean' },
-          expiringItemsUsed: {
-            type: 'array',
-            items: { type: 'string' },
-          },
+          expiringItemsUsed: { type: 'array', items: { type: 'string' } },
           prepTime: { type: 'string' },
-          difficulty: {
-            type: 'string',
-            enum: ['Easy', 'Medium', 'Hard'],
-          },
+          difficulty: { type: 'string', enum: ['Easy', 'Medium', 'Hard'] },
           flavorProfile: { type: 'string' },
           chefTip: { type: 'string' },
           ingredients: {
@@ -171,6 +223,7 @@ const mealSuggestionsSchema = {
   },
   required: ['meals'],
 };
+
 function getEnv(name: string, fallback = ''): string {
   return process.env[name] || fallback;
 }
@@ -184,6 +237,14 @@ function getReasoningEffort(): string {
 }
 
 function extractOutputText(response: any): string {
+  if (response?.status === 'incomplete') {
+    const reason =
+      typeof response?.incomplete_details?.reason === 'string'
+        ? response.incomplete_details.reason
+        : 'response_incomplete';
+    throw new Error(`OpenAI response incomplete: ${reason}`);
+  }
+
   if (typeof response?.output_text === 'string' && response.output_text.trim()) {
     return response.output_text;
   }
@@ -370,7 +431,7 @@ async function getShoppingSuggestions(
           .join('\n')
       : 'No recent consumption history.';
 
-  const shopsSummary = availableShops.map((shop) => shop.name).join(', ');
+  const shopsSummary = availableShops.map((shop) => `${shop.name} (${shop.type || 'grocery'})`).join(', ');
 
   const response = await callOpenAI({
     model: getModel('OPENAI_MODEL_LIGHT', 'gpt-5.4-nano'),
@@ -389,22 +450,23 @@ ${historySummary}
 Rules:
 - Prefer items that are likely to be needed soon.
 - Assign each item to one of the available shop names.
-- Use category "AI Suggestion" unless a more specific category clearly fits.
+- Include a storeType that matches the assigned shop.
+- Use source "restock" unless the item is clearly prompted by another workflow.
 - Keep reasons short.`,
     schemaName: 'shopping_suggestions',
     schema: shoppingSuggestionsSchema,
-    maxOutputTokens: 420,
+    maxOutputTokens: 520,
   });
 
   const parsed = JSON.parse(extractOutputText(response));
   return Array.isArray(parsed.items) ? parsed.items : [];
 }
 
-async function getMealSuggestions(
+async function getPlanInventoryIdeas(
   inventory: InventoryItem[],
   forDate: string,
-  preference = '',
   dietaryRestrictions: string[] = [],
+  historySummary = '',
 ): Promise<unknown[]> {
   const now = Date.now();
   const inventorySummary =
@@ -418,11 +480,7 @@ async function getMealSuggestions(
             return `- ${item.name}: ${item.quantity ?? 1} ${item.unit ?? 'item'}, expires in ${daysLeft} days`;
           })
           .join('\n')
-      : 'Inventory is empty. Create a full shopping-dependent meal set.';
-
-  const cravingText = preference
-    ? `The user specifically wants: "${preference}".`
-    : 'Suggest a balanced variety of meals.';
+      : 'Inventory is empty.';
 
   const dietaryText =
     dietaryRestrictions.length > 0
@@ -432,24 +490,71 @@ async function getMealSuggestions(
   const response = await callOpenAI({
     model: getModel('OPENAI_MODEL_MEALS', 'gpt-5.4-mini'),
     systemPrompt:
-      'You are a practical home-cooking meal planner focused on food waste reduction. Return strict JSON only. Produce realistic recipes, not restaurant copy. Keep each instruction clear and actionable.',
-    userText: `Suggest a meal plan for ${forDate}.
+      'You are an inventory-first meal planner. Return strict JSON only. Build practical meals that can be cooked from the current inventory with no missing ingredients beyond pantry staples. Keep suggestions concise and scheduling-friendly.',
+    userText: `Build an inventory-backed meal bank for ${forDate}.
 
 Current inventory:
 ${inventorySummary}
+
+History summary:
+${historySummary || 'No meal history summary.'}
+
+${dietaryText}
+
+Rules:
+- Return up to 6 meal ideas.
+- Only suggest meals that can be made from the inventory, excluding pantry staples like oil, salt, pepper, and water.
+- missingIngredientCount must be 0 for every idea.
+- inventoryMatchScore should be an integer from 80 to 100.
+- Keep ingredients and short notes, but do not include instructions.
+- Spread ideas across meal types when possible.`,
+    schemaName: 'plan_inventory_ideas',
+    schema: planIdeasSchema,
+    maxOutputTokens: 1600,
+  });
+
+  const parsed = JSON.parse(extractOutputText(response));
+  return Array.isArray(parsed.ideas) ? parsed.ideas : [];
+}
+
+async function getDiscoverMealIdeas(
+  inventory: InventoryItem[],
+  preference = '',
+  dietaryRestrictions: string[] = [],
+  historySummary = '',
+): Promise<unknown[]> {
+  const inventoryNames = inventory.slice(0, 30).map((item) => item.name).join(', ') || 'Inventory is sparse.';
+  const cravingText = preference
+    ? `The user specifically wants: "${preference}".`
+    : 'Suggest a balanced variety of appealing meals.';
+  const dietaryText =
+    dietaryRestrictions.length > 0
+      ? `Strict dietary restrictions: ${dietaryRestrictions.join(', ')}.`
+      : 'No dietary restrictions.';
+
+  const response = await callOpenAI({
+    model: getModel('OPENAI_MODEL_MEALS', 'gpt-5.4-mini'),
+    systemPrompt:
+      'You are a practical meal discovery assistant. Return strict JSON only. Produce realistic recipe ideas with concise steps and ingredient lists that can later feed shopping. They do not need to be fully covered by current inventory.',
+    userText: `Generate a discover bank of meal ideas.
+
+Current inventory snapshot:
+${inventoryNames}
+
+History summary:
+${historySummary || 'No meal history summary.'}
 
 ${cravingText}
 ${dietaryText}
 
 Rules:
-- Return exactly 5 suggestions: Breakfast, Brunch, Lunch, Snack, Dinner.
-- Prioritize expiring items when possible.
-- If inventory is sparse, include missing ingredients in the recipe ingredients list.
-- Every meal must include title, type, description, flavorProfile, chefTip, prepTime, difficulty, ingredients, and instructions.
-- Each recipe needs 5 to 8 concise steps.`,
-    schemaName: 'meal_suggestions',
-    schema: mealSuggestionsSchema,
-    maxOutputTokens: 1800,
+- Return up to 4 meal ideas.
+- Include a full ingredient list and 4 to 6 concise instructions.
+- It is okay if ingredients are missing from current inventory.
+- Keep descriptions short and useful.`,
+    schemaName: 'discover_meal_ideas',
+    schema: discoverMealsSchema,
+    maxOutputTokens: 2200,
   });
 
   const parsed = JSON.parse(extractOutputText(response));
@@ -481,15 +586,28 @@ export async function handleAiRequest(body: AiRequestBody): Promise<HandlerResul
             items: await getShoppingSuggestions(body.inventory || [], body.history || [], body.availableShops || []),
           },
         };
+      case 'plan_inventory_ideas':
+        return {
+          status: 200,
+          body: {
+            ideas: await getPlanInventoryIdeas(
+              body.inventory || [],
+              body.forDate,
+              body.dietaryRestrictions || [],
+              body.historySummary || '',
+            ),
+          },
+        };
+      case 'discover_meal_ideas':
       case 'meal_suggestions':
         return {
           status: 200,
           body: {
-            meals: await getMealSuggestions(
+            meals: await getDiscoverMealIdeas(
               body.inventory || [],
-              body.forDate,
               body.preference || '',
               body.dietaryRestrictions || [],
+              body.historySummary || '',
             ),
           },
         };
@@ -507,5 +625,3 @@ export async function handleAiRequest(body: AiRequestBody): Promise<HandlerResul
     };
   }
 }
-
-

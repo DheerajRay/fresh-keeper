@@ -10,7 +10,7 @@ describe('App shell', () => {
 
     expect(screen.getByRole('heading', { name: /My Fridge/i })).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: /Navigation menu/i }));
+    await user.click(screen.getAllByRole('button', { name: /Navigation menu/i })[0]);
     expect(screen.getByRole('heading', { name: /Navigate/i })).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /Meal Plan.*Meals/i }));
@@ -19,8 +19,9 @@ describe('App shell', () => {
     await user.click(screen.getByRole('button', { name: /Guide & Tips/i }));
     expect(screen.getByText(/Guide and storage tips/i)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Open storage map/i })).not.toBeInTheDocument();
-    expect(screen.getByText(/Use one accordion list so the zone details stay attached/i)).toBeInTheDocument();
+    expect(screen.getByText(/Open only the zones you need/i)).toBeInTheDocument();
     expect(screen.getAllByText(/^Freezer$/i).length).toBeGreaterThan(0);
+    expect(document.querySelectorAll('details[open]')).toHaveLength(0);
 
     await user.click(screen.getByRole('button', { name: /Shopping List/i }));
     expect(screen.getByText(/Suggestion intake/i)).toBeInTheDocument();

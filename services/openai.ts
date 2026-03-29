@@ -1,4 +1,4 @@
-import { InventoryItem, MealSuggestion, ShoppingItem, Shop } from '../types';
+import { DiscoveredMeal, InventoryItem, PlanIdea, ShoppingItem, Shop } from '../types';
 import { getSupabaseBrowserClient } from '../lib/supabase';
 
 const CACHE_KEY = 'freshkeeper_ai_cache_v3';
@@ -21,7 +21,7 @@ async function postAi<T>(payload: Record<string, unknown>): Promise<T> {
 
   try {
     data = raw ? JSON.parse(raw) : null;
-  } catch (error) {
+  } catch (_error) {
     throw new Error(raw || `AI request failed with status ${response.status}.`);
   }
 
@@ -131,6 +131,8 @@ export const getShoppingSuggestions = async (
         category: ShoppingItem['category'];
         reason?: string;
         shopName?: string;
+        source?: ShoppingItem['source'];
+        storeType?: ShoppingItem['storeType'];
       }>;
     }>({
       action: 'shopping_suggestions',
@@ -139,43 +141,82 @@ export const getShoppingSuggestions = async (
       availableShops,
     });
 
-    return (result.items || []).map((item) => ({
-      id: crypto.randomUUID(),
-      name: item.name,
-      quantity: item.quantity,
-      unit: item.unit,
-      category: item.category,
-      reason: item.reason,
-      shopId: availableShops.find((shop) => shop.name === item.shopName)?.id || availableShops[0]?.id,
-      isChecked: false,
-    }));
+    return (result.items || []).map((item) => {
+      const matchedShop = availableShops.find((shop) => shop.name === item.shopName);
+      return {
+        id: crypto.randomUUID(),
+        name: item.name,
+        quantity: item.quantity,
+        unit: item.unit,
+        category: item.category,
+        reason: item.reason,
+        shopId: matchedShop?.id || availableShops[0]?.id,
+        isChecked: false,
+        source: item.source || 'restock',
+        storeType: item.storeType || matchedShop?.type || availableShops[0]?.type || 'grocery',
+      };
+    });
   } catch (error) {
     console.error('Shopping suggestions error:', error);
     return [];
   }
 };
 
-export const getMealSuggestions = async (
+export const getPlanMealIdeas = async (
   inventory: InventoryItem[],
   forDate: string,
-  preference?: string,
   dietaryRestrictions: string[] = [],
-): Promise<MealSuggestion[]> => {
+  historySummary = '',
+): Promise<PlanIdea[]> => {
   try {
-    const result = await postAi<{ meals: MealSuggestion[] }>({
-      action: 'meal_suggestions',
+    const result = await postAi<{ ideas: PlanIdea[] }>({
+      action: 'plan_inventory_ideas',
       inventory,
       forDate,
+      dietaryRestrictions,
+      historySummary,
+    });
+
+    return (result.ideas || []).map((meal) => ({
+      ...meal,
+      id: meal.id || crypto.randomUUID(),
+      source: 'plan_bank',
+    }));
+  } catch (error) {
+    console.error('Plan bank error:', error);
+    return [];
+  }
+};
+
+export const getDiscoverMealIdeas = async (
+  inventory: InventoryItem[],
+  preference?: string,
+  dietaryRestrictions: string[] = [],
+  historySummary = '',
+): Promise<DiscoveredMeal[]> => {
+  try {
+    const result = await postAi<{ meals: DiscoveredMeal[] }>({
+      action: 'discover_meal_ideas',
+      inventory,
       preference,
       dietaryRestrictions,
+      historySummary,
     });
 
     return (result.meals || []).map((meal) => ({
       ...meal,
       id: meal.id || crypto.randomUUID(),
+      source: 'discover',
     }));
   } catch (error) {
     console.error('Meal suggestion error:', error);
     return [];
   }
 };
+
+export const getMealSuggestions = async (
+  inventory: InventoryItem[],
+  _forDate: string,
+  preference?: string,
+  dietaryRestrictions: string[] = [],
+): Promise<DiscoveredMeal[]> => getDiscoverMealIdeas(inventory, preference, dietaryRestrictions);
