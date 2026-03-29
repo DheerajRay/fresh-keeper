@@ -4,6 +4,10 @@ All notable changes to this project should be documented in this file.
 
 This project starts versioning with Semantic Versioning.
 
+## [0.5.3] - 2026-03-29
+
+- Renamed the theme presets to more distinctive in-app names while keeping the existing palettes and theme behavior intact.
+
 ## [0.5.2] - 2026-03-29
 
 - Restored the desktop header tabs to a proper horizontal navigation layout instead of the broken stacked rendering.
