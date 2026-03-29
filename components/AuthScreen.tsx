@@ -100,13 +100,6 @@ const AuthScreen: React.FC = () => {
                 Sign in to continue, or create an account to save your fridge, meals, and shopping data.
               </p>
             </div>
-
-            <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">What you need</p>
-              <p className="mt-3 text-sm leading-6 text-neutral-700">
-                Use your email and password. If you are creating an account, add a simple display name.
-              </p>
-            </div>
           </div>
         </Panel>
 
@@ -189,12 +182,6 @@ const AuthScreen: React.FC = () => {
                 {isSubmitting ? 'Working' : mode === 'sign_in' ? 'Sign in' : 'Create account'}
               </PrimaryButton>
             </form>
-
-            <div className="text-xs leading-6 text-neutral-600">
-              {mode === 'sign_in'
-                ? 'Use the email and password for your FreshKeeper account.'
-                : 'Create an account with your email, password, and display name.'}
-            </div>
           </div>
         </Panel>
       </div>

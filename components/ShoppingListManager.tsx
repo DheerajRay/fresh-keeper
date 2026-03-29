@@ -242,7 +242,7 @@ const ShoppingListManager: React.FC = () => {
       <PageHeader
         eyebrow="Shopping"
         title="Shopping List"
-        description="Collect discover-driven ingredients and manual adds in one list, then route them by store type and store."
+        description="Route ingredients by store."
         action={
           <div className="flex flex-wrap gap-2">
             <PrimaryButton type="button" onClick={() => setShowAddSheet(true)}>
@@ -272,7 +272,7 @@ const ShoppingListManager: React.FC = () => {
         <Panel className="p-4 md:p-5">
           <SectionHeader
             title="Store routing"
-            description="Items stay grouped by store type first, then by the specific store handling them."
+            
             action={
               checkedCount > 0 ? (
                 <SecondaryButton type="button" onClick={clearChecked}>
@@ -286,7 +286,7 @@ const ShoppingListManager: React.FC = () => {
             {groupedShoppingList.every((group) => group.stores.length === 0) ? (
               <EmptyState
                 title="No items in this list"
-                description="Add items manually or generate suggestions from your inventory and recent use patterns."
+                description="Add items or generate suggestions."
               />
             ) : (
               groupedShoppingList.map((group) => (
@@ -372,7 +372,7 @@ const ShoppingListManager: React.FC = () => {
         <Panel className="p-4 md:p-5">
           <SectionHeader
             title="Suggestion intake"
-            description="Suggestions help fill the list. Review, accept, dismiss, or bulk-add them."
+            
             action={
               suggestions.length > 1 ? (
                 <PrimaryButton type="button" onClick={addAllSuggestions}>
@@ -386,7 +386,7 @@ const ShoppingListManager: React.FC = () => {
             {suggestions.length === 0 ? (
               <EmptyState
                 title="No suggestions waiting"
-                description="Generate suggestions when you want the system to scan expiring items and recent history for restock ideas."
+                description="Generate suggestions when you need them."
               />
             ) : (
               suggestions.map((item) => (
@@ -435,7 +435,7 @@ const ShoppingListManager: React.FC = () => {
         open={showAddSheet}
         onClose={() => setShowAddSheet(false)}
         title="Add shopping item"
-        description="Keep manual entry short. If you do not choose a store, classification routes the item in the background."
+        
         footer={
           <PrimaryButton type="submit" form="shopping-add-form" disabled={!newItemName.trim()}>
             <Plus size={18} />
@@ -641,3 +641,4 @@ const ShoppingListManager: React.FC = () => {
 };
 
 export default ShoppingListManager;
+

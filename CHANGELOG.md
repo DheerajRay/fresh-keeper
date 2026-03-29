@@ -4,6 +4,11 @@ All notable changes to this project should be documented in this file.
 
 This project starts versioning with Semantic Versioning.
 
+## [0.5.1] - 2026-03-29
+
+- Trimmed low-value helper copy across the app shell, auth screen, inventory, meal, shopping, and guide surfaces so the interface reads cleaner and more directly.
+- Simplified the theme section in the menu by removing redundant descriptive text while keeping the compact picker intact.
+
 ## [0.5.0] - 2026-03-29
 
 - Reworked the signed-in app around household-backed Supabase persistence for fridge, meal, shopping, dietary preference, and theme state, with code-first migrations and synced local fallback behavior.

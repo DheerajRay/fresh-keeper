@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Camera,
   ChevronRight,
@@ -317,7 +317,7 @@ const InventoryManager: React.FC = () => {
       <PageHeader
         eyebrow="Inventory"
         title="My Fridge"
-        description="Track what is in storage, add items through one guided flow, and open details only when an item needs action."
+        description="Track what is in storage."
         action={
           <div className="flex flex-wrap gap-2">
             <PrimaryButton type="button" onClick={() => setShowAddSheet(true)}>
@@ -353,7 +353,7 @@ const InventoryManager: React.FC = () => {
       <Panel className="p-4 md:p-5">
         <SectionHeader
           title="Inventory list"
-          description="The list is the working surface. Use the map only when you need to inspect location layout."
+          
           action={
             <div className="flex flex-wrap gap-2">
               <SecondaryButton type="button" onClick={() => fileInputRef.current?.click()} disabled={isScanning}>
@@ -530,7 +530,7 @@ const InventoryManager: React.FC = () => {
         open={Boolean(activeItem)}
         onClose={() => setActiveItem(null)}
         title={activeItem?.name || 'Item details'}
-        description={activeItem ? `${formatDaysLeft(activeItem.expiryDate)} · ${FRIDGE_ZONES[activeItem.zoneId].name}` : ''}
+        description={activeItem ? `${formatDaysLeft(activeItem.expiryDate)} Â· ${FRIDGE_ZONES[activeItem.zoneId].name}` : ''}
         footer={
           activeItem ? (
             <div className="flex flex-col gap-3">
@@ -694,3 +694,5 @@ export function getRecommendedZone(recommendedStorage?: string) {
 }
 
 export default InventoryManager;
+
+

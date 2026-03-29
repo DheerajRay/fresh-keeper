@@ -115,9 +115,6 @@ export const AppShell: React.FC<{ displayName?: string; onSignOut?: () => void }
             </div>
             <div>
               <p className="text-xl font-semibold tracking-tight">FreshKeeper</p>
-              <p className="hidden text-xs uppercase tracking-[0.2em] text-neutral-500 sm:block">
-                kitchen operating system
-              </p>
             </div>
           </div>
 
@@ -183,14 +180,14 @@ export const AppShell: React.FC<{ displayName?: string; onSignOut?: () => void }
             <PageHeader
               eyebrow="Reference"
               title="Guide and storage tips"
-              description="Review storage zones and spoilage rules in one reference flow."
+              description="Storage zones and spoilage rules."
             />
 
             <div className="md:hidden">
               <Panel className="p-4">
                 <SectionHeader
                   title="Storage zones"
-                  description="Open only the zones you need so the reference stays compact."
+                  description="Open a zone to inspect it."
                 />
                 <div className="mt-4 space-y-2">
                   {guideZoneList.map((zone) => (
@@ -257,7 +254,7 @@ export const AppShell: React.FC<{ displayName?: string; onSignOut?: () => void }
               <Panel className="p-4 md:p-5">
                 <SectionHeader
                   title="Storage zones"
-                  description="Select a zone to inspect what belongs there and what to watch for."
+                  description="Select a zone."
                 />
                 <div className="mt-4 space-y-2">
                   {guideZoneList.map((zone) => (
@@ -297,19 +294,13 @@ export const AppShell: React.FC<{ displayName?: string; onSignOut?: () => void }
             <div className="space-y-4">
               <SectionHeader
                 title="Spoilage reference"
-                description="Keep this as the quick safety section: core spoilage mechanics and the signs that mean discard."
+                description="Core spoilage signs and discard rules."
               />
               <SpoilageSection />
             </div>
           </div>
         ) : null}
       </main>
-
-      <footer className="hidden border-t border-neutral-200 bg-white md:block">
-        <div className="mx-auto max-w-7xl px-4 py-8 text-sm text-neutral-600 md:px-6">
-          FreshKeeper keeps inventory, meal planning, shopping, and storage guidance in one connected workflow.
-        </div>
-      </footer>
 
       <nav className="fixed inset-x-4 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-50 mx-auto max-w-md rounded-2xl border border-neutral-200 bg-white p-1 md:hidden">
         <div className="grid grid-cols-4 gap-1">
@@ -340,7 +331,6 @@ export const AppShell: React.FC<{ displayName?: string; onSignOut?: () => void }
         open={showMenu}
         onClose={() => setShowMenu(false)}
         title="Navigate"
-        description="Switch sections, change theme, and keep account actions in one place."
       >
         <div className="space-y-6">
           {displayName ? (
@@ -382,7 +372,6 @@ export const AppShell: React.FC<{ displayName?: string; onSignOut?: () => void }
             <div className="space-y-3">
               <div className="space-y-1">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-neutral-500">Theme</p>
-                <p className="text-sm text-neutral-600">Keep the picker collapsed until you want to switch modes.</p>
               </div>
               <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-3">
                 <button
@@ -437,7 +426,6 @@ export const AppShell: React.FC<{ displayName?: string; onSignOut?: () => void }
                           >
                             <span className="min-w-0">
                               <span className="block text-sm font-semibold">{option.label}</span>
-                              <span className="mt-0.5 block text-xs text-neutral-500">{option.description}</span>
                             </span>
                             <span className="flex items-center gap-2">
                               <span
@@ -453,9 +441,6 @@ export const AppShell: React.FC<{ displayName?: string; onSignOut?: () => void }
                     </div>
                   </div>
                 ) : null}
-                <p className="mt-2 text-xs leading-5 text-neutral-600">
-                  {THEME_OPTIONS.find((option) => option.value === theme)?.description}
-                </p>
               </div>
             </div>
 
@@ -485,9 +470,6 @@ const AppBootstrap: React.FC = () => (
         <div className="space-y-2">
           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-neutral-500">FreshKeeper</p>
           <h1 className="text-3xl font-semibold tracking-tight text-neutral-950">Loading your account</h1>
-          <p className="text-sm leading-6 text-neutral-600">
-            Checking your session, theme, and household workspace.
-          </p>
         </div>
       </Panel>
     </div>

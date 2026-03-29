@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { CalendarDays, Loader2, RefreshCw, ShoppingCart, Trash2 } from 'lucide-react';
 import { DEFAULT_SHOPS, DIETARY_OPTIONS } from '../constants';
 import {
@@ -255,7 +255,7 @@ const MealPlanner: React.FC = () => {
       <PageHeader
         eyebrow="Meals"
         title="Meal Plan"
-        description="Plan schedules from what you already have. Discover is the separate place for broader meal exploration and ingredient capture."
+        description="Plan from inventory or discover new meals."
         action={
           <SegmentedControl<PlannerMode>
             value={mode}
@@ -281,7 +281,7 @@ const MealPlanner: React.FC = () => {
           <Panel className="p-4 md:p-5">
             <SectionHeader
               title="Schedule meals"
-              description="Choose a day, review what is already scheduled, then pull from the inventory-backed plan bank below."
+              
               action={
                 <PrimaryButton type="button" onClick={() => void generatePlanBank()} disabled={activeGenerator === 'plan'}>
                   {activeGenerator === 'plan' ? <Loader2 size={18} className="animate-spin" /> : <RefreshCw size={16} />}
@@ -315,7 +315,7 @@ const MealPlanner: React.FC = () => {
               {assignedMeals.length === 0 ? (
                 <EmptyState
                   title="Nothing scheduled for this day"
-                  description="Use the plan bank below to assign inventory-fit meal ideas to this date."
+                  description="Assign a plan-bank meal to this date."
                 />
               ) : (
                 <div className="space-y-3">
@@ -366,14 +366,14 @@ const MealPlanner: React.FC = () => {
           <Panel className="p-4 md:p-5">
             <SectionHeader
               title="Plan bank"
-              description="These meal ideas are generated from your actual inventory and current meal patterns."
+              
             />
 
             <div className="mt-6 space-y-3">
               {planBank.length === 0 ? (
                 <EmptyState
                   title="No inventory-backed ideas yet"
-                  description="Refresh the plan bank when your inventory changes or when you want a new set of practical meals."
+                  description="Refresh the bank when inventory changes."
                   action={
                     <PrimaryButton type="button" onClick={() => void generatePlanBank()} disabled={activeGenerator === 'plan'}>
                       {activeGenerator === 'plan' ? 'Refreshing' : 'Build plan bank'}
@@ -422,7 +422,7 @@ const MealPlanner: React.FC = () => {
           <Panel className="p-4 md:p-5">
             <SectionHeader
               title="Discover meals"
-              description="Explore broader meal ideas, inspect ingredients, and send only the missing ingredients to shopping."
+              
             />
 
             <div className="mt-6 border border-neutral-200 bg-white p-4 md:p-5">
@@ -479,7 +479,7 @@ const MealPlanner: React.FC = () => {
           <Panel className="p-4 md:p-5">
             <SectionHeader
               title="Discover bank"
-              description="Generated meal ideas stay here until you remove them or send their missing ingredients to shopping."
+              
               action={
                 discoverQueue.length > 0 ? (
                   <SecondaryButton type="button" onClick={() => setDiscoverQueue([])}>
@@ -493,7 +493,7 @@ const MealPlanner: React.FC = () => {
               {discoverQueue.length === 0 ? (
                 <EmptyState
                   title="No discovered meals yet"
-                  description="Generate meal ideas to build a separate discover bank without changing your scheduled plan."
+                  description="Generate meals to build the discover bank."
                 />
               ) : (
                 discoverQueue.map((meal) => {
@@ -548,7 +548,7 @@ const MealPlanner: React.FC = () => {
         open={Boolean(selectedMeal)}
         onClose={() => setSelectedMeal(null)}
         title={selectedMeal?.title || 'Meal details'}
-        description={selectedMeal ? `${selectedMeal.type} � ${selectedMeal.prepTime || '20 min'}` : ''}
+        description={selectedMeal ? `${selectedMeal.type} · ${selectedMeal.prepTime || '20 min'}` : ''}
       >
         {selectedMeal ? (
           <div className="space-y-6">
@@ -712,3 +712,4 @@ function buildMealHistorySummary(plans: Record<string, MealSuggestion[]>) {
 }
 
 export default MealPlanner;
+

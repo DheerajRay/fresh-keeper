@@ -19,7 +19,7 @@ describe('App shell', () => {
     await user.click(screen.getByRole('button', { name: /Guide & Tips/i }));
     expect(screen.getByText(/Guide and storage tips/i)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Open storage map/i })).not.toBeInTheDocument();
-    expect(screen.getByText(/Open only the zones you need/i)).toBeInTheDocument();
+    expect(screen.getByText(/Open a zone to inspect it/i)).toBeInTheDocument();
     expect(screen.getAllByText(/^Freezer$/i).length).toBeGreaterThan(0);
     expect(document.querySelectorAll('details[open]')).toHaveLength(0);
 
