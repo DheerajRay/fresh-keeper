@@ -106,8 +106,8 @@ export const AppShell: React.FC<{ displayName?: string; onSignOut?: () => void }
   }, [showMenu]);
 
   return (
-    <div className="min-h-screen bg-[#f5f5f3] text-neutral-950">
-      <header className="sticky top-0 z-50 border-b border-neutral-200 bg-white">
+    <div className="flex min-h-screen max-md:h-[100dvh] max-md:max-h-[100dvh] max-md:flex-col max-md:overflow-hidden bg-[#f5f5f3] text-neutral-950">
+      <header className="z-50 shrink-0 border-b border-neutral-200 bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 md:px-6">
           <div className="flex items-center gap-3">
             <div className="rounded-2xl border border-neutral-950 bg-transparent p-2 text-neutral-950">
@@ -171,7 +171,8 @@ export const AppShell: React.FC<{ displayName?: string; onSignOut?: () => void }
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-5 md:px-6 md:pb-12 md:pt-7">
+      <main className="app-scroll mx-auto max-w-6xl flex-1 min-h-0 overflow-y-auto overscroll-y-contain px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-5 md:px-6 md:pb-12 md:pt-7">
+        <div className="space-y-6">
         {currentView === 'inventory' ? <InventoryManager /> : null}
         {currentView === 'meals' ? <MealPlanner /> : null}
         {currentView === 'shopping' ? <ShoppingListManager /> : null}
@@ -300,6 +301,7 @@ export const AppShell: React.FC<{ displayName?: string; onSignOut?: () => void }
             </div>
           </div>
         ) : null}
+        </div>
       </main>
 
       <nav className="fixed inset-x-4 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-50 mx-auto max-w-md rounded-2xl border border-neutral-200 bg-white p-1 md:hidden">

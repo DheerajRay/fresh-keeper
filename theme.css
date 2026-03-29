@@ -178,6 +178,15 @@ body {
   font-family: 'IBM Plex Mono', monospace;
 }
 
+.app-scroll {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.app-scroll::-webkit-scrollbar {
+  display: none;
+}
+
 button,
 input,
 textarea,
@@ -186,6 +195,13 @@ select {
 }
 
 @media (max-width: 767px) {
+  html,
+  body,
+  #root {
+    height: 100%;
+    overflow: hidden;
+  }
+
   input,
   textarea,
   select {
