@@ -4,10 +4,9 @@ All notable changes to this project should be documented in this file.
 
 This project starts versioning with Semantic Versioning.
 
-## [0.5.4] - 2026-03-29
+## [0.5.7] - 2026-03-30
 
-- Moved mobile scrolling onto the main content pane so the header stays fixed in place while only the page sections beneath it scroll.
-- Hid the mobile content scrollbar and removed the remaining body-level scroll bounce behavior from the app shell.
+- Added a first-use shopping suggestions notice so tapping `Generate suggestions` explains that the feature needs inventory or item history before it can personalize results.
 
 ## [0.5.6] - 2026-03-30
 
@@ -19,6 +18,11 @@ This project starts versioning with Semantic Versioning.
 
 - Fixed the meal planner mobile layout so summary cards, planner actions, and discover-bank actions no longer break or overflow on narrow screens.
 - Restored backwards-compatible `shops.color` writes in the Supabase sync layer so shopping suggestion generation works against the current deployed database schema.
+
+## [0.5.4] - 2026-03-29
+
+- Moved mobile scrolling onto the main content pane so the header stays fixed in place while only the page sections beneath it scroll.
+- Hid the mobile content scrollbar and removed the remaining body-level scroll bounce behavior from the app shell.
 
 ## [0.5.3] - 2026-03-29
 

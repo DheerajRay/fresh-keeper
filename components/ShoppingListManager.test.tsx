@@ -159,6 +159,8 @@ describe('ShoppingListManager', () => {
       },
     ]);
 
+    localStorage.setItem('fridge_consumption_history', JSON.stringify([{ name: 'Lettuce', quantity: 1, unit: 'head' }]));
+
     render(<ShoppingListManager />);
 
     await user.click(screen.getByRole('button', { name: /generate suggestions/i }));
@@ -171,5 +173,23 @@ describe('ShoppingListManager', () => {
 
     expect(screen.queryByText('Lettuce')).not.toBeInTheDocument();
     expect(screen.getByText('Sparkling water')).toBeInTheDocument();
+  });
+
+  it('explains that suggestions need inventory or history before generating', async () => {
+    const user = userEvent.setup();
+    render(<ShoppingListManager />);
+
+    await user.click(screen.getByRole('button', { name: /generate suggestions/i }));
+
+    expect(await screen.findByText(/Suggestions need some usage first/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Shopping suggestions are built from your current inventory or your recent item history/i),
+    ).toBeInTheDocument();
+    expect(vi.mocked(getShoppingSuggestions)).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: /Got it/i }));
+    await waitFor(() => {
+      expect(screen.queryByText(/Suggestions need some usage first/i)).not.toBeInTheDocument();
+    });
   });
 });

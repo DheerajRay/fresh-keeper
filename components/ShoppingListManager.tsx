@@ -17,6 +17,7 @@ import {
 } from '../lib/appData';
 import { classifyShoppingItemStoreType, ensureDefaultShops, getDefaultShopForType, inferStoreTypeFromName } from '../lib/storeRouting';
 import {
+  ConfirmationDialog,
   EmptyState,
   PageHeader,
   Panel,
@@ -36,6 +37,7 @@ const ShoppingListManager: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showAddSheet, setShowAddSheet] = useState(false);
   const [showStoreSheet, setShowStoreSheet] = useState(false);
+  const [showSuggestionHelp, setShowSuggestionHelp] = useState(false);
   const [editingItem, setEditingItem] = useState<ShoppingItem | null>(null);
   const [newItemName, setNewItemName] = useState('');
   const [newItemQuantity, setNewItemQuantity] = useState(1);
@@ -101,9 +103,15 @@ const ShoppingListManager: React.FC = () => {
   );
 
   const handleGenerateSuggestions = async () => {
-    setIsLoading(true);
     const inventory: InventoryItem[] = getLocalInventory();
     const history: InventoryItem[] = getLocalConsumptionHistory();
+
+    if (inventory.length === 0 && history.length === 0) {
+      setShowSuggestionHelp(true);
+      return;
+    }
+
+    setIsLoading(true);
     const now = Date.now();
     const expiringItems = inventory.filter((item) => {
       const daysLeft = (item.expiryDate - now) / (1000 * 60 * 60 * 24);
@@ -636,6 +644,18 @@ const ShoppingListManager: React.FC = () => {
           </div>
         ) : null}
       </SurfaceSheet>
+
+      <ConfirmationDialog
+        open={showSuggestionHelp}
+        onClose={() => setShowSuggestionHelp(false)}
+        title="Suggestions need some usage first"
+        description="Shopping suggestions are built from your current inventory or your recent item history. Add a few fridge items or use the shopping list for a bit, then try again."
+        actions={
+          <PrimaryButton type="button" onClick={() => setShowSuggestionHelp(false)}>
+            Got it
+          </PrimaryButton>
+        }
+      />
     </div>
   );
 };
