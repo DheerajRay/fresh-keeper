@@ -4,6 +4,10 @@ All notable changes to this project should be documented in this file.
 
 This project starts versioning with Semantic Versioning.
 
+## [0.5.9] - 2026-03-30
+
+- Inlined the AI server handler into \'api/ai.ts\' so Vercel no longer depends on a separate runtime module for POST requests, fixing the deployed \'Cannot find module /var/task/api/_lib/openai\' failures.
+
 ## [0.5.8] - 2026-03-30
 
 - Hardened the Vercel AI route so POST requests lazy-load the AI handler and accept string-parsed request bodies instead of crashing the serverless function before it can return a JSON error.
@@ -147,5 +151,6 @@ This project starts versioning with Semantic Versioning.
 - Added detailed project documentation in the README.
 - Initialized git version control and connected the GitHub remote.
 - Created local OpenAI environment configuration placeholders for migration work.
+
 
 
