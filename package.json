@@ -1,7 +1,7 @@
 {
   "name": "freshkeeper:-smart-fridge-guide",
   "private": true,
-  "version": "0.5.7",
+  "version": "0.5.8",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -39,3 +39,4 @@
     "vitest": "^3.2.4"
   }
 }
+

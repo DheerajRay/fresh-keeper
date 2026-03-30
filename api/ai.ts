@@ -1,6 +1,7 @@
-import { handleAiRequest } from './_lib/openai';
-
 async function readJsonBody(req: any): Promise<any> {
+  if (typeof req.body === 'string') {
+    return req.body ? JSON.parse(req.body) : {};
+  }
   if (req.body && typeof req.body === 'object') {
     return req.body;
   }
@@ -26,6 +27,7 @@ export default async function handler(req: any, res: any) {
       return;
     }
     const body = await readJsonBody(req);
+    const { handleAiRequest } = await import('./_lib/openai');
     const result = await handleAiRequest(body);
     res.status(result.status).json(result.body);
   } catch (error) {
