@@ -69,6 +69,11 @@ export function ensureDefaultShops(shops: Shop[]): Shop[] {
   const normalized = shops.map((shop) => ({
     ...shop,
     type: shop.type ?? inferStoreTypeFromName(shop.name),
+    color:
+      shop.color ??
+      DEFAULT_SHOPS.find((defaultShop) => defaultShop.id === shop.id)?.color ??
+      DEFAULT_SHOPS.find((defaultShop) => defaultShop.type === (shop.type ?? inferStoreTypeFromName(shop.name)))?.color ??
+      '#8b7355',
   }));
 
   return DEFAULT_SHOPS.map((defaultShop) => normalized.find((shop) => shop.id === defaultShop.id) ?? defaultShop).concat(

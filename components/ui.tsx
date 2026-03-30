@@ -65,20 +65,24 @@ export const StatStrip: React.FC<{
   items: Array<{ label: string; value: React.ReactNode; note?: string }>;
 }> = ({ items }) => {
   const useCompactGrid = items.length <= 3;
+  const useStackedMobileGrid = useCompactGrid && items.length === 3;
 
   return (
     <div
       className={cx(
         useCompactGrid
-          ? 'grid grid-cols-3 gap-2 md:gap-3 md:grid-cols-3'
+          ? useStackedMobileGrid
+            ? 'grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3'
+            : 'grid grid-cols-3 gap-2 md:grid-cols-3 md:gap-3'
           : 'flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] md:grid md:gap-3 md:overflow-visible md:pb-0 md:sm:grid-cols-2 md:xl:grid-cols-4',
       )}
     >
-      {items.map((item) => (
+      {items.map((item, index) => (
         <div
           key={item.label}
           className={cx(
             'rounded-2xl border border-neutral-200 bg-neutral-50',
+            useStackedMobileGrid && index === items.length - 1 && 'col-span-2 md:col-span-1',
             useCompactGrid
               ? 'min-w-0 px-3 py-3'
               : 'min-w-[148px] shrink-0 px-4 py-3 md:min-w-0 md:px-4 md:py-4',

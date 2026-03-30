@@ -30,9 +30,9 @@ export const STORE_TYPE_OPTIONS: Array<{ label: string; value: StoreType; descri
 ];
 
 export const DEFAULT_SHOPS: Shop[] = [
-  { id: 'shop_default_grocery', name: 'Grocery', type: 'grocery', isDefault: true },
-  { id: 'shop_default_mall', name: 'Mall', type: 'mall', isDefault: true },
-  { id: 'shop_default_amazon_specialty', name: 'Amazon / Specialty', type: 'amazon_specialty', isDefault: true },
+  { id: 'shop_default_grocery', name: 'Grocery', type: 'grocery', color: '#8b7355', isDefault: true },
+  { id: 'shop_default_mall', name: 'Mall', type: 'mall', color: '#b48a54', isDefault: true },
+  { id: 'shop_default_amazon_specialty', name: 'Amazon / Specialty', type: 'amazon_specialty', color: '#6b7280', isDefault: true },
 ];
 
 export const STORE_TYPE_LABELS: Record<StoreType, string> = {

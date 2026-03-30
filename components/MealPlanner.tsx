@@ -291,14 +291,14 @@ const MealPlanner: React.FC = () => {
             />
 
             <div className="mt-5 space-y-5">
-              <div className="flex gap-2 overflow-x-auto pb-1">
+              <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none]">
                 {dates.map((date) => (
                   <button
                     key={date}
                     type="button"
                     onClick={() => setSelectedDate(date)}
                     className={cx(
-                      'min-w-[72px] rounded-3xl border px-3 py-2 text-left transition',
+                      'min-w-[64px] rounded-3xl border px-3 py-2 text-left transition sm:min-w-[72px]',
                       selectedDate === date
                         ? 'border-neutral-950 bg-transparent text-neutral-950'
                         : 'border-neutral-200 bg-white text-neutral-700',
@@ -321,7 +321,7 @@ const MealPlanner: React.FC = () => {
                 <div className="space-y-3">
                   {assignedMeals.map((meal) => (
                     <div key={meal.id} className="border border-neutral-200 bg-white px-4 py-4 transition hover:border-neutral-400">
-                      <div className="flex items-start justify-between gap-4">
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div className="space-y-2">
                           <div className="flex flex-wrap items-center gap-2">
                             <h3 className="text-base font-semibold text-neutral-950">{meal.title}</h3>
@@ -335,21 +335,21 @@ const MealPlanner: React.FC = () => {
                             <span>{meal.difficulty || 'Medium'}</span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <SecondaryButton type="button" onClick={() => setSelectedMeal(meal)} className="px-3 py-2">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                          <SecondaryButton type="button" onClick={() => setSelectedMeal(meal)} className="w-full px-3 py-2 sm:w-auto">
                             View
                           </SecondaryButton>
                           <SecondaryButton
                             type="button"
                             onClick={() => setMealToReschedule({ meal, currentDate: selectedDate })}
-                            className="px-3 py-2"
+                            className="w-full px-3 py-2 sm:w-auto"
                           >
                             Move
                           </SecondaryButton>
                           <SecondaryButton
                             type="button"
                             onClick={() => removeFromPlan(selectedDate, meal.id)}
-                            className="px-3 py-2"
+                            className="w-full px-3 py-2 sm:w-auto"
                             aria-label={`Remove ${meal.title}`}
                           >
                             <Trash2 size={16} />
@@ -383,7 +383,7 @@ const MealPlanner: React.FC = () => {
               ) : (
                 planBank.map((meal) => (
                   <div key={meal.id} className="border border-neutral-200 bg-white px-4 py-4 transition hover:border-neutral-400">
-                    <div className="flex items-start justify-between gap-4">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                       <div className="space-y-2">
                         <div className="flex flex-wrap items-center gap-2">
                           <h3 className="text-base font-semibold text-neutral-950">{meal.title}</h3>
@@ -401,11 +401,11 @@ const MealPlanner: React.FC = () => {
                           <span>{meal.expiringItemsUsed.length} expiring items used</span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <SecondaryButton type="button" onClick={() => setSelectedMeal(meal)} className="px-3 py-2">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <SecondaryButton type="button" onClick={() => setSelectedMeal(meal)} className="w-full px-3 py-2 sm:w-auto">
                           View
                         </SecondaryButton>
-                        <PrimaryButton type="button" onClick={() => setPlanIdeaToSchedule(meal)} className="px-3 py-2">
+                        <PrimaryButton type="button" onClick={() => setPlanIdeaToSchedule(meal)} className="w-full px-3 py-2 sm:w-auto">
                           <CalendarDays size={16} />
                           Schedule
                         </PrimaryButton>
@@ -468,7 +468,7 @@ const MealPlanner: React.FC = () => {
                   />
                 </label>
 
-                <PrimaryButton type="submit" disabled={activeGenerator === 'discover'}>
+                <PrimaryButton type="submit" disabled={activeGenerator === 'discover'} className="w-full sm:w-auto">
                   {activeGenerator === 'discover' ? <Loader2 size={18} className="animate-spin" /> : <RefreshCw size={16} />}
                   {activeGenerator === 'discover' ? 'Generating ideas' : 'Generate meal ideas'}
                 </PrimaryButton>
@@ -500,7 +500,7 @@ const MealPlanner: React.FC = () => {
                   const missing = getMissingIngredients(meal, inventory);
                   return (
                     <div key={meal.id} className="border border-neutral-200 bg-white px-4 py-4 transition hover:border-neutral-400">
-                      <div className="flex items-start justify-between gap-4">
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div className="space-y-2">
                           <div className="flex flex-wrap items-center gap-2">
                             <h3 className="text-base font-semibold text-neutral-950">{meal.title}</h3>
@@ -517,18 +517,18 @@ const MealPlanner: React.FC = () => {
                             <span>{meal.difficulty || 'Medium'}</span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <SecondaryButton type="button" onClick={() => setSelectedMeal(meal)} className="px-3 py-2">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                          <SecondaryButton type="button" onClick={() => setSelectedMeal(meal)} className="w-full px-3 py-2 sm:w-auto">
                             View
                           </SecondaryButton>
-                          <PrimaryButton type="button" onClick={() => void addDiscoverIngredientsToShopping(meal)} className="px-3 py-2">
+                          <PrimaryButton type="button" onClick={() => void addDiscoverIngredientsToShopping(meal)} className="w-full px-3 py-2 sm:w-auto">
                             <ShoppingCart size={16} />
                             Add missing
                           </PrimaryButton>
                           <SecondaryButton
                             type="button"
                             onClick={() => removeFromDiscover(meal.id)}
-                            className="px-3 py-2"
+                            className="w-full px-3 py-2 sm:w-auto"
                             aria-label={`Remove ${meal.title} from discover bank`}
                           >
                             <Trash2 size={16} />

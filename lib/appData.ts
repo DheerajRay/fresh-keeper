@@ -1,4 +1,4 @@
-﻿import { DEFAULT_SHOPS } from '../constants';
+import { DEFAULT_SHOPS } from '../constants';
 import type {
   DietaryRestriction,
   InventoryItem,
@@ -47,6 +47,7 @@ type ShopRow = {
   id: string;
   household_id: string;
   name: string;
+  color: string | null;
   store_type: StoreType;
   is_default: boolean;
 };
@@ -118,10 +119,16 @@ function writeJson(key: string, value: unknown) {
 }
 
 function normalizeShop(shop: Partial<Shop> & { name?: string; id?: string }): Shop {
+  const inferredType = isStoreType(shop.type) ? shop.type : inferStoreTypeFromName(shop.name || '');
   return {
     id: shop.id || crypto.randomUUID(),
     name: shop.name?.trim() || 'Custom store',
-    type: isStoreType(shop.type) ? shop.type : inferStoreTypeFromName(shop.name || ''),
+    type: inferredType,
+    color:
+      shop.color ??
+      DEFAULT_SHOPS.find((defaultShop) => defaultShop.id === shop.id)?.color ??
+      DEFAULT_SHOPS.find((defaultShop) => defaultShop.type === inferredType)?.color ??
+      '#8b7355',
     isDefault: Boolean(shop.isDefault),
   };
 }
@@ -285,18 +292,21 @@ function mapShopRow(row: ShopRow): Shop {
   return {
     id: row.id,
     name: row.name,
+    color: row.color ?? undefined,
     type: row.store_type,
     isDefault: row.is_default,
   };
 }
 
 function toShopRow(shop: Shop, householdId: string): ShopRow {
+  const normalizedShop = normalizeShop(shop);
   return {
-    id: shop.id,
+    id: normalizedShop.id,
     household_id: householdId,
-    name: shop.name,
-    store_type: shop.type,
-    is_default: Boolean(shop.isDefault),
+    name: normalizedShop.name,
+    color: normalizedShop.color ?? '#8b7355',
+    store_type: normalizedShop.type,
+    is_default: Boolean(normalizedShop.isDefault),
   };
 }
 
@@ -642,6 +652,3 @@ export async function replaceRemoteShops(shops: Shop[]) {
   const { error } = await context.supabase.from('shops').insert(normalizedShops.map((shop) => toShopRow(shop, context.householdId)));
   if (error) console.warn('Could not save remote shops', error);
 }
-
-
-

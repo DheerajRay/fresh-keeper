@@ -9,6 +9,11 @@ This project starts versioning with Semantic Versioning.
 - Moved mobile scrolling onto the main content pane so the header stays fixed in place while only the page sections beneath it scroll.
 - Hid the mobile content scrollbar and removed the remaining body-level scroll bounce behavior from the app shell.
 
+## [0.5.5] - 2026-03-30
+
+- Fixed the meal planner mobile layout so summary cards, planner actions, and discover-bank actions no longer break or overflow on narrow screens.
+- Restored backwards-compatible `shops.color` writes in the Supabase sync layer so shopping suggestion generation works against the current deployed database schema.
+
 ## [0.5.3] - 2026-03-29
 
 - Renamed the theme presets to more distinctive in-app names while keeping the existing palettes and theme behavior intact.
