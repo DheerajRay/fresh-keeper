@@ -29,6 +29,17 @@ type HandlerResult = {
   body: Record<string, unknown>;
 };
 
+type ShoppingSuggestionItem = {
+  name: string;
+  quantity: number;
+  unit: string;
+  category: 'Restock' | 'Expiring Soon' | 'AI Suggestion' | 'User Added';
+  reason: string;
+  shopName: string;
+  source: 'manual' | 'discover_recipe' | 'planner_gap' | 'restock';
+  storeType: (typeof STORE_TYPES)[number];
+};
+
 const shelfLifeSchema = {
   type: 'object',
   additionalProperties: false,
@@ -415,10 +426,60 @@ async function getShoppingSuggestions(
   history: InventoryItem[],
   availableShops: Shop[],
 ): Promise<unknown[]> {
+  const buildFallbackSuggestions = (): ShoppingSuggestionItem[] => {
+    if (availableShops.length === 0) return [];
+
+    const inventoryNames = new Set(inventory.map((item) => item.name.trim().toLowerCase()).filter(Boolean));
+    const historyCounts = new Map<string, number>();
+
+    for (const item of history) {
+      const key = item.name.trim().toLowerCase();
+      if (!key) continue;
+      historyCounts.set(key, (historyCounts.get(key) ?? 0) + 1);
+    }
+
+    const sortedHistory = [...historyCounts.entries()]
+      .filter(([name]) => !inventoryNames.has(name))
+      .sort((left, right) => right[1] - left[1])
+      .slice(0, 4);
+
+    const defaultGroceryShop =
+      availableShops.find((shop) => shop.type === 'grocery') ??
+      availableShops.find((shop) => shop.type === 'mall') ??
+      availableShops[0];
+
+    if (sortedHistory.length > 0 && defaultGroceryShop) {
+      return sortedHistory.map(([name]) => ({
+        name,
+        quantity: 1,
+        unit: 'item',
+        category: 'Restock',
+        reason: 'Frequently used recently.',
+        shopName: defaultGroceryShop.name,
+        source: 'restock',
+        storeType: (defaultGroceryShop.type as (typeof STORE_TYPES)[number]) || 'grocery',
+      }));
+    }
+
+    return inventory
+      .filter((item) => (item.quantity ?? 1) <= 1)
+      .slice(0, 4)
+      .map((item) => ({
+        name: item.name,
+        quantity: 1,
+        unit: item.unit || 'item',
+        category: 'Restock',
+        reason: 'Low stock in inventory.',
+        shopName: defaultGroceryShop?.name || availableShops[0].name,
+        source: 'restock',
+        storeType: ((defaultGroceryShop?.type || availableShops[0].type) as (typeof STORE_TYPES)[number]) || 'grocery',
+      }));
+  };
+
   const inventorySummary =
     inventory.length > 0
       ? inventory
-          .slice(0, 60)
+          .slice(0, 24)
           .map((item) => `- ${item.name}: ${item.quantity ?? 1} ${item.unit ?? 'item'}`)
           .join('\n')
       : 'Inventory is empty.';
@@ -426,18 +487,19 @@ async function getShoppingSuggestions(
   const historySummary =
     history.length > 0
       ? history
-          .slice(0, 60)
+          .slice(0, 24)
           .map((item) => `- ${item.name}: ${item.quantity ?? 1} ${item.unit ?? 'item'}`)
           .join('\n')
       : 'No recent consumption history.';
 
   const shopsSummary = availableShops.map((shop) => `${shop.name} (${shop.type || 'grocery'})`).join(', ');
 
-  const response = await callOpenAI({
-    model: getModel('OPENAI_MODEL_LIGHT', 'gpt-5.4-nano'),
-    systemPrompt:
-      'You create compact shopping suggestions from kitchen state. Return strict JSON only. Focus on realistic restocks and useful staples, not novelty.',
-    userText: `Generate up to 6 shopping items.
+  try {
+    const response = await callOpenAI({
+      model: getModel('OPENAI_MODEL_LIGHT', 'gpt-5.4-nano'),
+      systemPrompt:
+        'You create compact shopping suggestions from kitchen state. Return strict JSON only. Focus on realistic restocks and useful staples, not novelty.',
+      userText: `Generate up to 4 shopping items.
 
 Available shops: ${shopsSummary}
 
@@ -453,13 +515,16 @@ Rules:
 - Include a storeType that matches the assigned shop.
 - Use source "restock" unless the item is clearly prompted by another workflow.
 - Keep reasons short.`,
-    schemaName: 'shopping_suggestions',
-    schema: shoppingSuggestionsSchema,
-    maxOutputTokens: 520,
-  });
+      schemaName: 'shopping_suggestions',
+      schema: shoppingSuggestionsSchema,
+      maxOutputTokens: 280,
+    });
 
-  const parsed = JSON.parse(extractOutputText(response));
-  return Array.isArray(parsed.items) ? parsed.items : [];
+    const parsed = JSON.parse(extractOutputText(response));
+    return Array.isArray(parsed.items) ? parsed.items : [];
+  } catch (_error) {
+    return buildFallbackSuggestions();
+  }
 }
 
 async function getPlanInventoryIdeas(

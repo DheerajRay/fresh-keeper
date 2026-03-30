@@ -9,6 +9,12 @@ This project starts versioning with Semantic Versioning.
 - Moved mobile scrolling onto the main content pane so the header stays fixed in place while only the page sections beneath it scroll.
 - Hid the mobile content scrollbar and removed the remaining body-level scroll bounce behavior from the app shell.
 
+## [0.5.6] - 2026-03-30
+
+- Fixed the desktop shell layout regression so the header and content stack correctly again instead of rendering side-by-side.
+- Tightened the meal planner mobile layout so the summary strip and action rows no longer overflow like a desktop layout on narrow screens.
+- Hardened shopping suggestion generation with a smaller AI request and a server-side heuristic fallback so the flow keeps working even when the AI request fails.
+
 ## [0.5.5] - 2026-03-30
 
 - Fixed the meal planner mobile layout so summary cards, planner actions, and discover-bank actions no longer break or overflow on narrow screens.

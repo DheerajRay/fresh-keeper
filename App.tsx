@@ -106,9 +106,9 @@ export const AppShell: React.FC<{ displayName?: string; onSignOut?: () => void }
   }, [showMenu]);
 
   return (
-    <div className="flex min-h-screen max-md:h-[100dvh] max-md:max-h-[100dvh] max-md:flex-col max-md:overflow-hidden bg-[#f5f5f3] text-neutral-950">
+    <div className="flex min-h-screen w-full min-w-0 flex-col bg-[#f5f5f3] text-neutral-950 max-md:h-[100dvh] max-md:max-h-[100dvh] max-md:overflow-hidden">
       <header className="z-50 shrink-0 border-b border-neutral-200 bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 md:px-6">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-3 md:px-6">
           <div className="flex items-center gap-3">
             <div className="rounded-2xl border border-neutral-950 bg-transparent p-2 text-neutral-950">
               <Grid2X2 size={18} />
@@ -171,8 +171,8 @@ export const AppShell: React.FC<{ displayName?: string; onSignOut?: () => void }
         </div>
       </header>
 
-      <main className="app-scroll mx-auto max-w-6xl flex-1 min-h-0 overflow-y-auto overscroll-y-contain px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-5 md:px-6 md:pb-12 md:pt-7">
-        <div className="space-y-6">
+      <main className="app-scroll mx-auto w-full max-w-6xl min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-5 md:px-6 md:pb-12 md:pt-7">
+        <div className="w-full min-w-0 space-y-6">
         {currentView === 'inventory' ? <InventoryManager /> : null}
         {currentView === 'meals' ? <MealPlanner /> : null}
         {currentView === 'shopping' ? <ShoppingListManager /> : null}
