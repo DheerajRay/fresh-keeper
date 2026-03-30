@@ -19,6 +19,7 @@ import { classifyShoppingItemStoreType, ensureDefaultShops, getDefaultShopForTyp
 import {
   ConfirmationDialog,
   EmptyState,
+  MobileStatsButton,
   PageHeader,
   Panel,
   PrimaryButton,
@@ -86,6 +87,11 @@ const ShoppingListManager: React.FC = () => {
   }, [hasTouchedShopType, newShopName]);
 
   const checkedCount = shoppingList.filter((item) => item.isChecked).length;
+  const statItems = [
+    { label: 'List items', value: shoppingList.length },
+    { label: 'Suggestions', value: suggestions.length },
+    { label: 'Checked off', value: checkedCount },
+  ];
 
   const groupedShoppingList = useMemo(
     () =>
@@ -264,17 +270,12 @@ const ShoppingListManager: React.FC = () => {
             <SecondaryButton type="button" onClick={() => setShowStoreSheet(true)}>
               Stores
             </SecondaryButton>
+            <MobileStatsButton title="Shopping summary" items={statItems} />
           </div>
         }
       />
 
-      <StatStrip
-        items={[
-          { label: 'List items', value: shoppingList.length },
-          { label: 'Suggestions', value: suggestions.length },
-          { label: 'Checked off', value: checkedCount },
-        ]}
-      />
+      <StatStrip items={statItems} className="hidden md:grid" />
 
       <div className="space-y-5">
         <Panel className="p-4 md:p-5">

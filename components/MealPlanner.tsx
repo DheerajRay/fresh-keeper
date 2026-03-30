@@ -33,6 +33,7 @@ import {
 import { classifyShoppingItemStoreType, ensureDefaultShops, getDefaultShopForType } from '../lib/storeRouting';
 import {
   EmptyState,
+  MobileStatsButton,
   PageHeader,
   Panel,
   PrimaryButton,
@@ -143,6 +144,11 @@ const MealPlanner: React.FC = () => {
         .filter(Boolean).length,
     [plans],
   );
+  const statItems = [
+    { label: 'Planned meals', value: plannedCount },
+    { label: 'Plan bank', value: planBank.length, note: 'Inventory-backed ideas' },
+    { label: 'Discover bank', value: discoverQueue.length, note: 'Broader meal ideas' },
+  ];
 
   useEffect(() => {
     if (!remoteHydrated || autoPlanGeneratedRef.current || inventory.length === 0 || planBank.length > 0) return;
@@ -257,24 +263,21 @@ const MealPlanner: React.FC = () => {
         title="Meal Plan"
         description="Plan from inventory or discover new meals."
         action={
-          <SegmentedControl<PlannerMode>
-            value={mode}
-            onChange={(value) => setMode(value)}
-            options={[
-              { value: 'plan', label: 'Plan' },
-              { value: 'discover', label: 'Discover' },
-            ]}
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <SegmentedControl<PlannerMode>
+              value={mode}
+              onChange={(value) => setMode(value)}
+              options={[
+                { value: 'plan', label: 'Plan' },
+                { value: 'discover', label: 'Discover' },
+              ]}
+            />
+            <MobileStatsButton title="Meal summary" items={statItems} />
+          </div>
         }
       />
 
-      <StatStrip
-        items={[
-          { label: 'Planned meals', value: plannedCount },
-          { label: 'Plan bank', value: planBank.length, note: 'Inventory-backed ideas' },
-          { label: 'Discover bank', value: discoverQueue.length, note: 'Broader meal ideas' },
-        ]}
-      />
+      <StatStrip items={statItems} className="hidden md:grid" />
 
       {mode === 'plan' ? (
         <div className="space-y-5">

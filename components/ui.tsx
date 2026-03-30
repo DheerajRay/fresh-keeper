@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X } from 'lucide-react';
+import { ChartColumnIncreasing, X } from 'lucide-react';
 
 function joinClasses(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(' ');
@@ -63,12 +63,14 @@ export const EmptyState: React.FC<{
 
 export const StatStrip: React.FC<{
   items: Array<{ label: string; value: React.ReactNode; note?: string }>;
-}> = ({ items }) => {
+  className?: string;
+}> = ({ items, className }) => {
   const useCompactGrid = items.length <= 3;
 
   return (
     <div
       className={cx(
+        className,
         useCompactGrid
           ? 'grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 md:gap-3'
           : 'flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] md:grid md:gap-3 md:overflow-visible md:pb-0 md:sm:grid-cols-2 md:xl:grid-cols-4',
@@ -97,6 +99,47 @@ export const StatStrip: React.FC<{
         </div>
       ))}
     </div>
+  );
+};
+
+export const MobileStatsButton: React.FC<{
+  title: string;
+  items: Array<{ label: string; value: React.ReactNode; note?: string }>;
+}> = ({ title, items }) => {
+  const [open, setOpen] = React.useState(false);
+
+  return (
+    <>
+      <IconButton
+        type="button"
+        className="md:hidden px-3"
+        aria-label={`Show ${title.toLowerCase()} summary`}
+        onClick={() => setOpen(true)}
+      >
+        <ChartColumnIncreasing size={16} />
+      </IconButton>
+      <ConfirmationDialog
+        open={open}
+        onClose={() => setOpen(false)}
+        title={title}
+        description="Quick summary"
+        actions={
+          <PrimaryButton type="button" onClick={() => setOpen(false)}>
+            Close
+          </PrimaryButton>
+        }
+      >
+        <div className="space-y-3 pt-1">
+          {items.map((item) => (
+            <div key={item.label} className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-neutral-500">{item.label}</p>
+              <p className="mt-2 text-2xl font-semibold tracking-tight text-neutral-950">{item.value}</p>
+              {item.note ? <p className="mt-2 text-sm leading-6 text-neutral-600">{item.note}</p> : null}
+            </div>
+          ))}
+        </div>
+      </ConfirmationDialog>
+    </>
   );
 };
 

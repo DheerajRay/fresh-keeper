@@ -4,6 +4,10 @@ All notable changes to this project should be documented in this file.
 
 This project starts versioning with Semantic Versioning.
 
+## [0.5.10] - 2026-03-30
+
+- Moved the three summary cards on inventory, meals, and shopping into a mobile-only stats dialog so the working area appears immediately under the page actions while desktop keeps the full stat strip.
+
 ## [0.5.9] - 2026-03-30
 
 - Inlined the AI server handler into \'api/ai.ts\' so Vercel no longer depends on a separate runtime module for POST requests, fixing the deployed \'Cannot find module /var/task/api/_lib/openai\' failures.
@@ -151,6 +155,7 @@ This project starts versioning with Semantic Versioning.
 - Added detailed project documentation in the README.
 - Initialized git version control and connected the GitHub remote.
 - Created local OpenAI environment configuration placeholders for migration work.
+
 
 
 

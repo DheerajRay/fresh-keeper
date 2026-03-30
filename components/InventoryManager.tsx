@@ -24,6 +24,7 @@ import {
 import {
   ConfirmationDialog,
   EmptyState,
+  MobileStatsButton,
   PageHeader,
   Panel,
   PrimaryButton,
@@ -114,6 +115,11 @@ const InventoryManager: React.FC = () => {
 
   const expiringSoon = items.filter((item) => getStatus(item.expiryDate) !== 'Fresh').length;
   const zonesUsed = new Set(items.map((item) => item.zoneId)).size;
+  const statItems = [
+    { label: 'Tracked items', value: items.length },
+    { label: 'Need attention', value: expiringSoon, note: 'Expired or due within 48 hours' },
+    { label: 'Zones in use', value: zonesUsed || 0 },
+  ];
 
   const addToHistory = (item: InventoryItem) => {
     pushLocalConsumptionHistory(item);
@@ -328,6 +334,7 @@ const InventoryManager: React.FC = () => {
               <Refrigerator size={18} />
               Zones
             </SecondaryButton>
+            <MobileStatsButton title="Inventory summary" items={statItems} />
           </div>
         }
       />
@@ -342,13 +349,7 @@ const InventoryManager: React.FC = () => {
         disabled={isScanning}
       />
 
-      <StatStrip
-        items={[
-          { label: 'Tracked items', value: items.length },
-          { label: 'Need attention', value: expiringSoon, note: 'Expired or due within 48 hours' },
-          { label: 'Zones in use', value: zonesUsed || 0 },
-        ]}
-      />
+      <StatStrip items={statItems} className="hidden md:grid" />
 
       <Panel className="p-4 md:p-5">
         <SectionHeader
