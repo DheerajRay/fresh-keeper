@@ -124,8 +124,7 @@ This app is a single-page client application with no routing library. AI feature
 - `components/ZoneDetail.tsx` renders the educational zone details.
 - `components/SpoilageSection.tsx` renders the spoilage science content.
 - `services/openai.ts` contains all frontend AI calls.
-- `api/_lib/openai.ts` contains the shared OpenAI request logic for local development and shared server behavior.
-- `api/ai.ts` exposes the Vercel serverless API endpoint.
+- `api/ai.ts` contains the shared OpenAI request logic and exposes the Vercel serverless API endpoint.
 - `constants.ts` contains the static storage guide, zone descriptions, shop defaults, and unit options.
 - `types.ts` defines shared app types.
 

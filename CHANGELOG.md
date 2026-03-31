@@ -4,6 +4,10 @@ All notable changes to this project should be documented in this file.
 
 This project starts versioning with Semantic Versioning.
 
+## [0.5.11] - 2026-03-31
+
+- Removed the last stale `api/_lib/openai` dependency, pointed the local Vite AI bridge at `api/ai.ts`, and deleted the unused helper file so Vercel POST requests no longer fail looking for a missing runtime module.
+
 ## [0.5.10] - 2026-03-30
 
 - Moved the three summary cards on inventory, meals, and shopping into a mobile-only stats dialog so the working area appears immediately under the page actions while desktop keeps the full stat strip.
