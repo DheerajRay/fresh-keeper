@@ -4,6 +4,11 @@ All notable changes to this project should be documented in this file.
 
 This project starts versioning with Semantic Versioning.
 
+## [0.5.15] - 2026-04-04
+
+- Strengthened the appearance system so Small, Medium, and Large now create clearly visible typography and spacing changes across the app.
+- Deepened per-theme personality by varying shell tinting, control fills, active states, and surface contrast rather than relying mostly on border and text color swaps.
+
 ## [0.5.14] - 2026-04-04
 
 - Added a synced App Size setting with Small, Medium, and Large options, including local boot caching and Supabase-backed preference hydration.
@@ -175,6 +180,7 @@ This project starts versioning with Semantic Versioning.
 - Added detailed project documentation in the README.
 - Initialized git version control and connected the GitHub remote.
 - Created local OpenAI environment configuration placeholders for migration work.
+
 
 
 
