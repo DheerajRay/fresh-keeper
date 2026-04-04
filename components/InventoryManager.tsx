@@ -24,6 +24,7 @@ import {
 import {
   ConfirmationDialog,
   EmptyState,
+  FloatingActionButton,
   MobileStatsButton,
   PageHeader,
   Panel,
@@ -351,6 +352,10 @@ const InventoryManager: React.FC = () => {
       />
 
       <StatStrip items={statItems} className="hidden md:grid" />
+
+      <FloatingActionButton label="Open fridge quick action" onClick={() => setShowAddSheet(true)}>
+        <Plus size={22} />
+      </FloatingActionButton>
 
       <Panel className="p-4 md:p-5">
         <SectionHeader

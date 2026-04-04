@@ -34,6 +34,7 @@ import {
 import { classifyShoppingItemStoreType, ensureDefaultShops, getDefaultShopForType } from '../lib/storeRouting';
 import {
   EmptyState,
+  FloatingActionButton,
   MobileStatsButton,
   PageHeader,
   Panel,
@@ -425,6 +426,12 @@ const MealPlanner: React.FC = () => {
       />
 
       <StatStrip items={statItems} className="hidden md:grid" />
+
+      {mode === 'plan' ? (
+        <FloatingActionButton label="Open meal quick action" onClick={openManualMeal}>
+          <Plus size={22} />
+        </FloatingActionButton>
+      ) : null}
 
       {mode === 'plan' ? (
         <div className="space-y-5">

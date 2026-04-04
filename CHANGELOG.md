@@ -4,6 +4,10 @@ All notable changes to this project should be documented in this file.
 
 This project starts versioning with Semantic Versioning.
 
+## [0.5.17] - 2026-04-04
+
+- Added mobile floating add buttons to My Fridge, Meal Plan, and Shopping List, each reusing the existing add flow instead of introducing a separate interaction path.
+
 ## [0.5.16] - 2026-04-04
 
 - Pinned the desktop app header so navigation stays fixed while the page content scrolls underneath it.

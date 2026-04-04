@@ -295,6 +295,23 @@ export const PrimaryButton: React.FC<React.ButtonHTMLAttributes<HTMLButtonElemen
   />
 );
 
+export const FloatingActionButton: React.FC<
+  React.ButtonHTMLAttributes<HTMLButtonElement> & { label: string }
+> = ({ className, label, children, ...props }) => (
+  <button
+    type="button"
+    aria-label={label}
+    title={label}
+    className={cx(
+      'app-button app-button-primary fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom))] right-4 z-40 inline-flex h-14 w-14 items-center justify-center rounded-full border border-neutral-950 bg-transparent text-neutral-950 transition md:hidden',
+      className,
+    )}
+    {...props}
+  >
+    {children}
+  </button>
+);
+
 export const SecondaryButton: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement>> = ({
   className,
   ...props

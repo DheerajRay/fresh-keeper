@@ -19,6 +19,7 @@ import { classifyShoppingItemStoreType, ensureDefaultShops, getDefaultShopForTyp
 import {
   ConfirmationDialog,
   EmptyState,
+  FloatingActionButton,
   MobileStatsButton,
   PageHeader,
   Panel,
@@ -292,6 +293,10 @@ const ShoppingListManager: React.FC = () => {
       />
 
       <StatStrip items={statItems} className="hidden md:grid" />
+
+      <FloatingActionButton label="Open shopping quick action" onClick={() => setShowAddSheet(true)}>
+        <Plus size={22} />
+      </FloatingActionButton>
 
       <div className="space-y-5">
         <Panel className="p-4 md:p-5">
