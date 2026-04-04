@@ -4,6 +4,12 @@ All notable changes to this project should be documented in this file.
 
 This project starts versioning with Semantic Versioning.
 
+## [0.5.19] - 2026-04-04
+
+- Added a `Consume soon` layer to the Meal Plan page so the planner can surface ready-to-eat leftovers, fruit, drinks, desserts, snacks, and similar items that should be used before expiry.
+- Kept the existing plan bank intact for cookable inventory-backed meals while separating direct-consume suggestions into their own planner section.
+- Expanded meal planner coverage to verify the new consume-soon behavior without changing scheduling or discover flows.
+
 ## [0.5.18] - 2026-04-04
 
 - Promoted the floating add action from mobile-only to both desktop and mobile for My Fridge, Meal Plan, and Shopping List.

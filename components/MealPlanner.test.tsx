@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import MealPlanner, { enrichMeals, getInventory, getMissingIngredients } from './MealPlanner';
+import MealPlanner, { buildConsumeSoonIdeas, enrichMeals, getInventory, getMissingIngredients } from './MealPlanner';
 import { getDiscoverMealIdeas, getManualMealRecipe, getPlanMealIdeas } from '../services/openai';
 import { ZoneId } from '../types';
 
@@ -55,6 +55,41 @@ describe('MealPlanner', () => {
         [{ id: 'inv-1', name: 'Eggs' } as any],
       )[0].ingredients?.[0].inInventory,
     ).toBe(true);
+
+    expect(
+      buildConsumeSoonIdeas([
+        {
+          id: 'consume-1',
+          name: 'Fried Rice',
+          zoneId: ZoneId.UPPER_SHELVES,
+          addedDate: 1,
+          expiryDate: Date.now() + 86400000,
+          estimatedDays: 2,
+          quantity: 1,
+          unit: 'plate',
+        },
+        {
+          id: 'consume-2',
+          name: 'Mango',
+          zoneId: ZoneId.COUNTER,
+          addedDate: 1,
+          expiryDate: Date.now() + 2 * 86400000,
+          estimatedDays: 3,
+          quantity: 1,
+          unit: 'item',
+        },
+        {
+          id: 'consume-3',
+          name: 'Eggs',
+          zoneId: ZoneId.LOWER_SHELVES,
+          addedDate: 1,
+          expiryDate: Date.now() + 86400000,
+          estimatedDays: 2,
+          quantity: 6,
+          unit: 'item',
+        },
+      ] as any).map((idea) => idea.title),
+    ).toEqual(['Fried Rice', 'Mango']);
   });
 
   it('builds an inventory-backed plan bank and schedules an idea to a date', async () => {
@@ -262,5 +297,41 @@ describe('MealPlanner', () => {
         (meal: { title: string; scheduledFor?: string }) => meal.title === 'Tomato Pasta' && meal.scheduledFor === 'Lunch',
       ),
     ).toBe(true);
+  });
+
+  it('shows direct consume suggestions for ready-to-eat items nearing expiry', async () => {
+    vi.mocked(getPlanMealIdeas).mockResolvedValue([]);
+
+    localStorage.setItem(
+      'fridge_inventory',
+      JSON.stringify([
+        {
+          id: 'inv-consume-1',
+          name: 'Fried Rice',
+          zoneId: ZoneId.UPPER_SHELVES,
+          addedDate: 1,
+          expiryDate: Date.now() + 86400000,
+          estimatedDays: 2,
+          quantity: 1,
+          unit: 'plate',
+        },
+        {
+          id: 'inv-consume-2',
+          name: 'Mango',
+          zoneId: ZoneId.COUNTER,
+          addedDate: 1,
+          expiryDate: Date.now() + 2 * 86400000,
+          estimatedDays: 3,
+          quantity: 1,
+          unit: 'item',
+        },
+      ]),
+    );
+
+    render(<MealPlanner />);
+
+    expect(await screen.findByText(/Consume soon/i)).toBeInTheDocument();
+    expect(screen.getByText('Fried Rice')).toBeInTheDocument();
+    expect(screen.getByText('Mango')).toBeInTheDocument();
   });
 });

@@ -92,6 +92,44 @@ type MissingReviewState = {
   ingredients: Array<{ name: string; amount: string; inInventory: boolean }>;
 };
 
+type ConsumeSoonIdea = {
+  id: string;
+  title: string;
+  kind: 'leftover' | 'fruit' | 'drink' | 'snack' | 'dessert' | 'side';
+  urgency: string;
+  suggestion: string;
+  expiryDate: number;
+};
+
+const DIRECT_CONSUME_KEYWORDS = {
+  fruit: [
+    'apple',
+    'banana',
+    'berries',
+    'berry',
+    'mango',
+    'orange',
+    'grape',
+    'melon',
+    'watermelon',
+    'pear',
+    'peach',
+    'plum',
+    'kiwi',
+    'pineapple',
+    'papaya',
+    'avocado',
+    'strawberry',
+    'blueberry',
+    'raspberry',
+  ],
+  drink: ['juice', 'smoothie', 'soda', 'water', 'drink', 'tea', 'coffee', 'kombucha', 'lemonade', 'milkshake'],
+  snack: ['chips', 'cracker', 'cookie', 'biscuit', 'granola', 'nuts', 'popcorn', 'snack', 'chocolate', 'candy'],
+  dessert: ['ice cream', 'gelato', 'pudding', 'custard'],
+  side: ['pickle', 'pickles', 'jam', 'jelly', 'chutney', 'salsa', 'hummus', 'dip'],
+  leftover: ['leftover', 'fried rice', 'curry', 'pasta', 'noodles', 'pizza', 'sandwich', 'salad', 'soup', 'stew', 'biryani'],
+} as const;
+
 function createManualMealDraft(date: string): ManualMealDraft {
   return {
     dishName: '',
@@ -180,6 +218,7 @@ const MealPlanner: React.FC = () => {
   const inventory = getInventory();
   const historySummary = useMemo(() => buildMealHistorySummary(plans), [plans]);
   const planBank = useMemo(() => enrichMeals((plans[PLAN_BANK_KEY] || []) as PlanIdea[], inventory) as PlanIdea[], [inventory, plans]);
+  const consumeSoonIdeas = useMemo(() => buildConsumeSoonIdeas(inventory), [inventory]);
   const assignedMeals = useMemo(
     () =>
       (enrichMeals((plans[selectedDate] || []) as AssignedMeal[], inventory) as AssignedMeal[]).sort(
@@ -523,6 +562,29 @@ const MealPlanner: React.FC = () => {
               )}
             </div>
           </Panel>
+
+          {consumeSoonIdeas.length > 0 ? (
+            <Panel className="p-4 md:p-5">
+              <SectionHeader title="Consume soon" />
+
+              <div className="mt-6 grid gap-3">
+                {consumeSoonIdeas.map((idea) => (
+                  <div key={idea.id} className="border border-neutral-200 bg-white px-4 py-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-base font-semibold text-neutral-950">{idea.title}</h3>
+                      <span className="rounded-full border border-neutral-300 px-2.5 py-1 text-[11px] text-neutral-500">
+                        {CONSUME_KIND_LABELS[idea.kind]}
+                      </span>
+                      <span className="rounded-full border border-neutral-300 px-2.5 py-1 text-[11px] text-neutral-500">
+                        {idea.urgency}
+                      </span>
+                    </div>
+                    <p className="mt-3 text-sm leading-6 text-neutral-600">{idea.suggestion}</p>
+                  </div>
+                ))}
+              </div>
+            </Panel>
+          ) : null}
 
           <Panel className="p-4 md:p-5">
             <SectionHeader
@@ -1228,6 +1290,35 @@ export function enrichMeals<T extends MealSuggestion>(meals: T[], inventory: Inv
   }));
 }
 
+export function buildConsumeSoonIdeas(inventory: InventoryItem[]): ConsumeSoonIdea[] {
+  const now = Date.now();
+
+  return inventory
+    .map((item) => {
+      const daysLeft = Math.ceil((item.expiryDate - now) / (1000 * 60 * 60 * 24));
+      if (daysLeft < 0 || daysLeft > 4) return null;
+
+      const kind = classifyConsumeSoonKind(item);
+      if (!kind) return null;
+
+      return {
+        id: `consume-${item.id}`,
+        title: item.name,
+        kind,
+        urgency: daysLeft === 0 ? 'Use today' : `${daysLeft} day${daysLeft === 1 ? '' : 's'} left`,
+        suggestion: buildConsumeSoonSuggestion(kind),
+        expiryDate: item.expiryDate,
+      } as ConsumeSoonIdea;
+    })
+    .filter((idea): idea is ConsumeSoonIdea => Boolean(idea))
+    .sort((left, right) => {
+      const urgencyRank = left.expiryDate - right.expiryDate;
+      if (urgencyRank !== 0) return urgencyRank;
+      return consumeKindPriority(left.kind) - consumeKindPriority(right.kind);
+    })
+    .slice(0, 4);
+}
+
 function uniqueMeals<T extends MealSuggestion>(meals: T[]) {
   const seen = new Set<string>();
   return meals.filter((meal) => {
@@ -1273,6 +1364,74 @@ function buildMealHistorySummary(plans: Record<string, MealSuggestion[]>) {
   const titles = scheduledMeals.slice(-8).map((meal) => meal.title).join(', ');
   const mealTypes = Array.from(new Set(scheduledMeals.map((meal) => meal.type))).join(', ');
   return `Recent scheduled meals: ${titles}. Common meal types: ${mealTypes}.`;
+}
+
+const CONSUME_KIND_LABELS: Record<ConsumeSoonIdea['kind'], string> = {
+  leftover: 'Meal ready',
+  fruit: 'Fruit',
+  drink: 'Drink',
+  snack: 'Snack',
+  dessert: 'Dessert',
+  side: 'Side',
+};
+
+function classifyConsumeSoonKind(item: InventoryItem): ConsumeSoonIdea['kind'] | null {
+  const name = item.name.toLowerCase().trim();
+  const unit = (item.unit || '').toLowerCase().trim();
+
+  if (unit === 'bowl' || unit === 'container' || unit === 'plate' || DIRECT_CONSUME_KEYWORDS.leftover.some((keyword) => name.includes(keyword))) {
+    return 'leftover';
+  }
+  if (DIRECT_CONSUME_KEYWORDS.dessert.some((keyword) => name.includes(keyword))) {
+    return 'dessert';
+  }
+  if (DIRECT_CONSUME_KEYWORDS.fruit.some((keyword) => name.includes(keyword))) {
+    return 'fruit';
+  }
+  if (DIRECT_CONSUME_KEYWORDS.drink.some((keyword) => name.includes(keyword))) {
+    return 'drink';
+  }
+  if (DIRECT_CONSUME_KEYWORDS.snack.some((keyword) => name.includes(keyword))) {
+    return 'snack';
+  }
+  if (DIRECT_CONSUME_KEYWORDS.side.some((keyword) => name.includes(keyword))) {
+    return 'side';
+  }
+  return null;
+}
+
+function buildConsumeSoonSuggestion(kind: ConsumeSoonIdea['kind']) {
+  switch (kind) {
+    case 'leftover':
+      return 'Finish this as your next meal while it is still fresh.';
+    case 'fruit':
+      return 'Use it as a quick snack, breakfast side, or light dessert before it softens.';
+    case 'drink':
+      return 'Pour a glass soon so it does not get forgotten behind newer items.';
+    case 'snack':
+      return 'Keep it in rotation for a quick snack before texture and freshness drop.';
+    case 'dessert':
+      return 'Treat this as your next dessert before quality starts to fade.';
+    case 'side':
+      return 'Pair it with your next meal so it gets used before it sits too long.';
+  }
+}
+
+function consumeKindPriority(kind: ConsumeSoonIdea['kind']) {
+  switch (kind) {
+    case 'leftover':
+      return 0;
+    case 'fruit':
+      return 1;
+    case 'drink':
+      return 2;
+    case 'dessert':
+      return 3;
+    case 'snack':
+      return 4;
+    case 'side':
+      return 5;
+  }
 }
 
 export default MealPlanner;
