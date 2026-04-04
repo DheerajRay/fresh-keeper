@@ -48,6 +48,8 @@ export type ThemeName =
   | 'pitch_black'
   | 'red';
 
+export type AppSizeName = 's' | 'm' | 'l';
+
 export type StoreType = 'grocery' | 'mall' | 'amazon_specialty';
 
 export interface Shop {

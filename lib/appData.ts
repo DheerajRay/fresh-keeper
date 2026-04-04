@@ -1,5 +1,6 @@
 import { DEFAULT_SHOPS } from '../constants';
 import type {
+  AppSizeName,
   DietaryRestriction,
   InventoryItem,
   MealSuggestion,
@@ -21,6 +22,7 @@ const STORAGE_KEYS = {
   shoppingList: 'freshkeeper_shopping_list',
   shops: 'freshkeeper_shops',
   theme: 'freshkeeper_theme',
+  appSize: 'freshkeeper_app_size',
 } as const;
 
 type RemoteContext = {
@@ -81,6 +83,7 @@ type UserPreferencesRow = {
   user_id: string;
   dietary_restrictions: DietaryRestriction[];
   theme: ThemeName;
+  app_size: AppSizeName;
 };
 
 let cachedRemoteContext: RemoteContext | null = null;
@@ -100,6 +103,10 @@ function isThemeName(value: unknown): value is ThemeName {
 
 function isStoreType(value: unknown): value is StoreType {
   return value === 'grocery' || value === 'mall' || value === 'amazon_specialty';
+}
+
+function isAppSizeName(value: unknown): value is AppSizeName {
+  return value === 's' || value === 'm' || value === 'l';
 }
 
 function readJson<T>(key: string, fallback: T): T {
@@ -212,6 +219,15 @@ export function getLocalTheme(): ThemeName {
 
 export function setLocalTheme(theme: ThemeName) {
   localStorage.setItem(STORAGE_KEYS.theme, theme);
+}
+
+export function getLocalAppSize(): AppSizeName {
+  const raw = localStorage.getItem(STORAGE_KEYS.appSize);
+  return isAppSizeName(raw) ? raw : 'm';
+}
+
+export function setLocalAppSize(size: AppSizeName) {
+  localStorage.setItem(STORAGE_KEYS.appSize, size);
 }
 
 async function getRemoteContext(): Promise<RemoteContext | null> {
@@ -353,7 +369,7 @@ async function upsertUserPreferences(patch: Partial<UserPreferencesRow>) {
 
   const { data } = await context.supabase
     .from('user_preferences')
-    .select('dietary_restrictions, theme')
+    .select('dietary_restrictions, theme, app_size')
     .eq('user_id', context.userId)
     .maybeSingle();
 
@@ -361,6 +377,7 @@ async function upsertUserPreferences(patch: Partial<UserPreferencesRow>) {
     user_id: context.userId,
     dietary_restrictions: patch.dietary_restrictions ?? (data as UserPreferencesRow | null)?.dietary_restrictions ?? getLocalDietaryRestrictions(),
     theme: patch.theme ?? (data as UserPreferencesRow | null)?.theme ?? getLocalTheme(),
+    app_size: patch.app_size ?? (data as UserPreferencesRow | null)?.app_size ?? getLocalAppSize(),
   };
 
   const { error } = await context.supabase.from('user_preferences').upsert(next, { onConflict: 'user_id' });
@@ -567,8 +584,36 @@ export async function hydrateTheme(localTheme: ThemeName) {
   return remoteTheme ?? localTheme;
 }
 
+export async function hydrateAppSize(localAppSize: AppSizeName) {
+  const remoteAppSize = await hydrateRemoteCollection(async ({ supabase, userId }) => {
+    const { data, error } = await supabase
+      .from('user_preferences')
+      .select('app_size')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error) {
+      console.warn('Could not load app size from Supabase', error);
+      return localAppSize;
+    }
+
+    if (!data && localAppSize) {
+      await replaceRemoteAppSize(localAppSize);
+      return localAppSize;
+    }
+
+    return (data as Pick<UserPreferencesRow, 'app_size'> | null)?.app_size ?? localAppSize;
+  });
+
+  return remoteAppSize ?? localAppSize;
+}
+
 export async function replaceRemoteTheme(theme: ThemeName) {
   await upsertUserPreferences({ theme });
+}
+
+export async function replaceRemoteAppSize(app_size: AppSizeName) {
+  await upsertUserPreferences({ app_size });
 }
 
 export async function hydrateShoppingList(localItems: ShoppingItem[]) {
@@ -652,3 +697,4 @@ export async function replaceRemoteShops(shops: Shop[]) {
   const { error } = await context.supabase.from('shops').insert(normalizedShops.map((shop) => toShopRow(shop, context.householdId)));
   if (error) console.warn('Could not save remote shops', error);
 }
+

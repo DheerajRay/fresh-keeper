@@ -1,10 +1,10 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { AppShell } from './App';
 
 describe('App shell', () => {
-  it('switches between tabs and renders the mobile guide accordion flow', async () => {
+  it('switches between tabs and renders the guide flow plus appearance controls', async () => {
     const user = userEvent.setup();
     render(<AppShell />);
 
@@ -27,5 +27,16 @@ describe('App shell', () => {
     expect(screen.getByRole('heading', { name: /Menu/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /My Fridge.*Fridge/i })).not.toBeInTheDocument();
     expect(screen.getByText(/^Theme$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^App Size$/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /current app size/i }));
+    const sizeList = screen.getByRole('listbox');
+    expect(within(sizeList).getByRole('button', { name: /Small/i })).toBeInTheDocument();
+    expect(within(sizeList).getByRole('button', { name: /Large/i })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /current theme/i }));
+    const themeList = screen.getByRole('listbox');
+    expect(within(themeList).getByText(/High-contrast dark system/i)).toBeInTheDocument();
+    expect(within(themeList).getByRole('button', { name: /Emberglass/i })).toBeInTheDocument();
   });
 });

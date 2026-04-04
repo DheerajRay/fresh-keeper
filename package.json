@@ -1,44 +1,41 @@
 {
-  "name": "freshkeeper:-smart-fridge-guide",
-  "private": true,
-  "version": "0.5.13",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "lint": "tsc --noEmit",
-    "test": "vitest run",
-    "test:coverage": "vitest run --coverage",
-    "supabase:login": "supabase login",
-    "supabase:link": "supabase link",
-    "supabase:start": "supabase start",
-    "supabase:stop": "supabase stop",
-    "supabase:status": "supabase status",
-    "supabase:migration:new": "supabase migration new",
-    "supabase:db:push": "supabase db push"
-  },
-  "dependencies": {
-    "@supabase/supabase-js": "^2.100.1",
-    "lucide-react": "^0.555.0",
-    "react": "^19.2.1",
-    "react-dom": "^19.2.1",
-    "react-markdown": "^10.1.0"
-  },
-  "devDependencies": {
-    "@testing-library/jest-dom": "^6.9.1",
-    "@testing-library/react": "^16.3.2",
-    "@testing-library/user-event": "^14.6.1",
-    "@types/node": "^22.14.0",
-    "@vitejs/plugin-react": "^5.0.0",
-    "@vitest/coverage-v8": "^3.2.4",
-    "jsdom": "^27.0.1",
-    "supabase": "^2.84.4",
-    "typescript": "~5.8.2",
-    "vite": "^6.2.0",
-    "vitest": "^3.2.4"
-  }
+    "name":  "freshkeeper:-smart-fridge-guide",
+    "private":  true,
+    "version":  "0.5.14",
+    "type":  "module",
+    "scripts":  {
+                    "dev":  "vite",
+                    "build":  "vite build",
+                    "preview":  "vite preview",
+                    "lint":  "tsc --noEmit",
+                    "test":  "vitest run",
+                    "test:coverage":  "vitest run --coverage",
+                    "supabase:login":  "supabase login",
+                    "supabase:link":  "supabase link",
+                    "supabase:start":  "supabase start",
+                    "supabase:stop":  "supabase stop",
+                    "supabase:status":  "supabase status",
+                    "supabase:migration:new":  "supabase migration new",
+                    "supabase:db:push":  "supabase db push"
+                },
+    "dependencies":  {
+                         "@supabase/supabase-js":  "^2.100.1",
+                         "lucide-react":  "^0.555.0",
+                         "react":  "^19.2.1",
+                         "react-dom":  "^19.2.1",
+                         "react-markdown":  "^10.1.0"
+                     },
+    "devDependencies":  {
+                            "@testing-library/jest-dom":  "^6.9.1",
+                            "@testing-library/react":  "^16.3.2",
+                            "@testing-library/user-event":  "^14.6.1",
+                            "@types/node":  "^22.14.0",
+                            "@vitejs/plugin-react":  "^5.0.0",
+                            "@vitest/coverage-v8":  "^3.2.4",
+                            "jsdom":  "^27.0.1",
+                            "supabase":  "^2.84.4",
+                            "typescript":  "~5.8.2",
+                            "vite":  "^6.2.0",
+                            "vitest":  "^3.2.4"
+                        }
 }
-
-
-

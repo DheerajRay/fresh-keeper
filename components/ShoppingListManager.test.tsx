@@ -25,14 +25,13 @@ describe('ShoppingListManager', () => {
 
     const nameInput = screen.getByDisplayValue('Matcha powder');
     const quantityInput = screen.getAllByRole('spinbutton').at(-1)!;
-    const editSelects = screen.getAllByRole('combobox');
-    const unitSelect = editSelects.at(-2)!;
-    const storeSelect = editSelects.at(-1)!;
     await user.clear(nameInput);
     await user.type(nameInput, 'Bulk Rice');
     fireEvent.change(quantityInput, { target: { value: '3' } });
-    fireEvent.change(unitSelect, { target: { value: 'box' } });
-    fireEvent.change(storeSelect, { target: { value: 'shop_default_mall' } });
+    await user.click(screen.getByLabelText(/^Unit$/i));
+    await user.click(screen.getByRole('button', { name: /^Box\(es\)$/i }));
+    await user.click(screen.getByLabelText(/^Store$/i));
+    await user.click(screen.getByRole('button', { name: /^Mall$/i }));
     await user.click(screen.getByRole('button', { name: /Save changes/i }));
 
     expect(await screen.findByText('Bulk Rice')).toBeInTheDocument();
@@ -167,9 +166,10 @@ describe('ShoppingListManager', () => {
     expect(await screen.findByText('Lettuce')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /Add all/i }));
 
-    expect(await screen.findByText('Sparkling water')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /Mark Lettuce as checked/i }));
     await user.click(screen.getByRole('button', { name: /Clear checked/i }));
+    await user.click(screen.getByRole('button', { name: /Mall\s*1 items/i }));
+    expect(await screen.findByText('Sparkling water')).toBeInTheDocument();
 
     expect(screen.queryByText('Lettuce')).not.toBeInTheDocument();
     expect(screen.getByText('Sparkling water')).toBeInTheDocument();

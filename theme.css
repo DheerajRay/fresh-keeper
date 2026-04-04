@@ -16,6 +16,11 @@
   --accent-bg: #f5f5f5;
   --accent-fg: #09090b;
   --selection-bg: rgba(245, 245, 245, 0.18);
+  --menu-muted: rgba(255, 255, 255, 0.02);
+  --surface-shadow: transparent;
+  --control-fill: var(--panel-muted);
+  --control-fill-strong: var(--panel-subtle);
+  --panel-outline: color-mix(in srgb, var(--border-default) 84%, transparent);
   color-scheme: dark;
 }
 
@@ -37,6 +42,11 @@
   --accent-bg: #090b10;
   --accent-fg: #f8fafc;
   --selection-bg: rgba(9, 11, 16, 0.12);
+  --menu-muted: rgba(9, 11, 16, 0.02);
+  --surface-shadow: transparent;
+  --control-fill: #f7f8fa;
+  --control-fill-strong: #eef1f5;
+  --panel-outline: color-mix(in srgb, var(--border-default) 88%, white 12%);
   color-scheme: light;
 }
 
@@ -58,6 +68,11 @@
   --accent-bg: #d8b84f;
   --accent-fg: #1a1608;
   --selection-bg: rgba(216, 184, 79, 0.18);
+  --menu-muted: rgba(216, 184, 79, 0.06);
+  --surface-shadow: transparent;
+  --control-fill: #12130d;
+  --control-fill-strong: #1b1b12;
+  --panel-outline: color-mix(in srgb, var(--border-default) 88%, transparent);
   color-scheme: dark;
 }
 
@@ -79,6 +94,11 @@
   --accent-bg: #d6b728;
   --accent-fg: #231d08;
   --selection-bg: rgba(214, 183, 40, 0.18);
+  --menu-muted: rgba(214, 183, 40, 0.08);
+  --surface-shadow: transparent;
+  --control-fill: #fff7da;
+  --control-fill-strong: #ffefc0;
+  --panel-outline: color-mix(in srgb, var(--border-default) 84%, white 16%);
   color-scheme: light;
 }
 
@@ -100,6 +120,11 @@
   --accent-bg: #7aa7d8;
   --accent-fg: #0f1a24;
   --selection-bg: rgba(122, 167, 216, 0.2);
+  --menu-muted: rgba(122, 167, 216, 0.07);
+  --surface-shadow: transparent;
+  --control-fill: #eef5fb;
+  --control-fill-strong: #ddeaf5;
+  --panel-outline: color-mix(in srgb, var(--border-default) 84%, white 16%);
   color-scheme: light;
 }
 
@@ -121,6 +146,11 @@
   --accent-bg: #e8a04d;
   --accent-fg: #221407;
   --selection-bg: rgba(232, 160, 77, 0.18);
+  --menu-muted: rgba(232, 160, 77, 0.07);
+  --surface-shadow: transparent;
+  --control-fill: #fff3e5;
+  --control-fill-strong: #ffe8d1;
+  --panel-outline: color-mix(in srgb, var(--border-default) 84%, white 16%);
   color-scheme: light;
 }
 
@@ -142,6 +172,11 @@
   --accent-bg: #5e6672;
   --accent-fg: #f3f5f7;
   --selection-bg: rgba(94, 102, 114, 0.18);
+  --menu-muted: rgba(94, 102, 114, 0.05);
+  --surface-shadow: transparent;
+  --control-fill: #08090b;
+  --control-fill-strong: #0f1114;
+  --panel-outline: color-mix(in srgb, var(--border-default) 92%, transparent);
   color-scheme: dark;
 }
 
@@ -163,7 +198,58 @@
   --accent-bg: #b64a57;
   --accent-fg: #fff4f5;
   --selection-bg: rgba(182, 74, 87, 0.18);
+  --menu-muted: rgba(182, 74, 87, 0.06);
+  --surface-shadow: transparent;
+  --control-fill: #160b0d;
+  --control-fill-strong: #211114;
+  --panel-outline: color-mix(in srgb, var(--border-default) 88%, transparent);
   color-scheme: dark;
+}
+
+:root,
+:root[data-app-size='m'] {
+  --title-size: clamp(2.1rem, 2.8vw, 3rem);
+  --section-title-size: 1rem;
+  --body-size: 0.95rem;
+  --caption-size: 0.72rem;
+  --panel-padding: 1.25rem;
+  --section-gap: 1.5rem;
+  --button-height: 3rem;
+  --button-padding-x: 1rem;
+  --input-height: 3.25rem;
+  --sheet-padding: 1.25rem;
+  --stat-padding: 0.9rem;
+  --icon-scale: 1;
+}
+
+:root[data-app-size='s'] {
+  --title-size: clamp(1.9rem, 2.4vw, 2.65rem);
+  --section-title-size: 0.94rem;
+  --body-size: 0.9rem;
+  --caption-size: 0.68rem;
+  --panel-padding: 1rem;
+  --section-gap: 1.15rem;
+  --button-height: 2.85rem;
+  --button-padding-x: 0.9rem;
+  --input-height: 3rem;
+  --sheet-padding: 1.05rem;
+  --stat-padding: 0.78rem;
+  --icon-scale: 0.95;
+}
+
+:root[data-app-size='l'] {
+  --title-size: clamp(2.3rem, 3vw, 3.25rem);
+  --section-title-size: 1.08rem;
+  --body-size: 1rem;
+  --caption-size: 0.76rem;
+  --panel-padding: 1.45rem;
+  --section-gap: 1.75rem;
+  --button-height: 3.2rem;
+  --button-padding-x: 1.15rem;
+  --input-height: 3.45rem;
+  --sheet-padding: 1.4rem;
+  --stat-padding: 1rem;
+  --icon-scale: 1.05;
 }
 
 html,
@@ -176,6 +262,144 @@ body {
   background: var(--page-bg);
   color: var(--text-primary);
   font-family: 'IBM Plex Mono', monospace;
+  font-size: var(--body-size);
+}
+
+.app-shell {
+  background: var(--page-bg);
+  color: var(--text-primary);
+}
+
+.app-header,
+.app-desktop-nav,
+.app-menu-card,
+.app-panel,
+.app-dialog,
+.app-sheet {
+  box-shadow: 0 0 0 1px var(--panel-outline), 0 0 0 0 var(--surface-shadow);
+}
+
+.app-brand-mark,
+.app-desktop-nav,
+.app-menu-card,
+.app-picker-trigger,
+.app-select-trigger,
+.app-select-list,
+.app-dialog,
+.app-sheet,
+.app-panel,
+.app-empty-state,
+.app-stat-card,
+.app-summary-card,
+.app-button,
+.app-segment,
+.app-select-option {
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.app-page-header,
+.app-section-header {
+  gap: var(--section-gap);
+}
+
+.app-page-eyebrow,
+.app-section-title,
+.app-stat-label {
+  font-size: var(--caption-size);
+}
+
+.app-page-title {
+  font-size: var(--title-size);
+  line-height: 0.98;
+}
+
+.app-page-description,
+.app-section-description,
+.app-empty-description,
+.app-stat-note {
+  font-size: var(--body-size);
+}
+
+.app-panel {
+  overflow: hidden;
+}
+
+.app-empty-state,
+.app-summary-card,
+.app-panel,
+.app-menu-card,
+.app-stat-card {
+  background-color: var(--panel-bg);
+}
+
+.app-empty-state {
+  background-image: linear-gradient(to bottom, transparent, transparent);
+}
+
+.app-stat-card,
+.app-summary-card {
+  padding: var(--stat-padding);
+}
+
+.app-segmented,
+.app-picker-trigger,
+.app-select-trigger,
+.app-button,
+.app-desktop-nav {
+  min-height: var(--button-height);
+}
+
+.app-button,
+.app-picker-trigger,
+.app-select-trigger {
+  padding-left: var(--button-padding-x);
+  padding-right: var(--button-padding-x);
+}
+
+.app-select-trigger {
+  min-height: var(--input-height);
+  background: var(--control-fill);
+}
+
+.app-select-list,
+.app-menu-card {
+  background: var(--panel-elevated);
+}
+
+.app-picker-trigger,
+.app-select-option,
+.app-button-secondary,
+.app-button-icon,
+.app-segmented {
+  background: var(--control-fill);
+}
+
+.app-button-primary,
+.app-segment.border-neutral-950,
+.app-select-option.border-neutral-950,
+.app-picker-trigger:hover {
+  background: color-mix(in srgb, var(--accent-bg) 8%, var(--control-fill));
+}
+
+.app-sheet-header,
+.app-sheet-body,
+.app-sheet-footer,
+.app-dialog-header,
+.app-dialog-actions {
+  padding-left: var(--sheet-padding);
+  padding-right: var(--sheet-padding);
+}
+
+.app-sheet-header,
+.app-dialog-header {
+  padding-top: calc(var(--sheet-padding) * 0.9);
+  padding-bottom: calc(var(--sheet-padding) * 0.8);
+}
+
+.app-sheet-body,
+.app-dialog-actions {
+  padding-top: var(--sheet-padding);
+  padding-bottom: var(--sheet-padding);
 }
 
 .app-scroll {
@@ -312,7 +536,7 @@ select {
 }
 
 .hover\:bg-neutral-50:hover {
-  background-color: var(--panel-subtle) !important;
+  background-color: var(--control-fill-strong) !important;
 }
 
 .hover\:border-neutral-300:hover,
@@ -336,6 +560,8 @@ select {
 button svg,
 .lucide {
   stroke-width: 1.75;
+  transform: scale(var(--icon-scale));
+  transform-origin: center;
 }
 
 .shadow-sm,

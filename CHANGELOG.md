@@ -4,6 +4,12 @@ All notable changes to this project should be documented in this file.
 
 This project starts versioning with Semantic Versioning.
 
+## [0.5.14] - 2026-04-04
+
+- Added a synced App Size setting with Small, Medium, and Large options, including local boot caching and Supabase-backed preference hydration.
+- Reworked the menu into a compact account-and-appearance surface with inline App Size and Theme pickers that stay stable on desktop and mobile.
+- Deepened theme personalities and normalized shared UI primitives so headers, panels, buttons, dropdowns, sheets, and stat blocks use the same appearance system without changing feature behavior.
+
 ## [0.5.13] - 2026-04-04
 
 - Replaced the in-section `Manual meal` action with a top-level `Add meal` action in the meal planner header so the flow matches the rest of the app.
@@ -169,6 +175,7 @@ This project starts versioning with Semantic Versioning.
 - Added detailed project documentation in the README.
 - Initialized git version control and connected the GitHub remote.
 - Created local OpenAI environment configuration placeholders for migration work.
+
 
 
 

@@ -208,6 +208,8 @@ describe('MealPlanner', () => {
 
     expect(await screen.findByText('Miso Noodle Bowl')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /Add missing/i }));
+    expect(await screen.findByText(/Missing for Miso Noodle Bowl/i)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Add to shopping/i }));
 
     await waitFor(() => {
       const shoppingList = JSON.parse(localStorage.getItem('freshkeeper_shopping_list') || '[]');

@@ -38,6 +38,7 @@ import {
   PageHeader,
   Panel,
   PrimaryButton,
+  SelectMenu,
   SecondaryButton,
   SectionHeader,
   SegmentedControl,
@@ -85,6 +86,11 @@ type ManualMealDraft = {
   chefTip: string;
 };
 
+type MissingReviewState = {
+  meal: DiscoveredMeal;
+  ingredients: Array<{ name: string; amount: string; inInventory: boolean }>;
+};
+
 function createManualMealDraft(date: string): ManualMealDraft {
   return {
     dishName: '',
@@ -113,6 +119,7 @@ const MealPlanner: React.FC = () => {
   );
   const [manualMealOpen, setManualMealOpen] = useState(false);
   const [manualMealLoading, setManualMealLoading] = useState(false);
+  const [missingReview, setMissingReview] = useState<MissingReviewState | null>(null);
   const [craving, setCraving] = useState('');
   const [selectedRestrictions, setSelectedRestrictions] = useState<DietaryRestriction[]>(() => getLocalDietaryRestrictions());
   const [remoteHydrated, setRemoteHydrated] = useState(false);
@@ -340,17 +347,26 @@ const MealPlanner: React.FC = () => {
     setDiscoverQueue((current) => current.filter((meal) => meal.id !== mealId));
   };
 
-  const addDiscoverIngredientsToShopping = async (meal: DiscoveredMeal) => {
+  const openDiscoverIngredientsReview = (meal: DiscoveredMeal) => {
     const missingIngredients = getMissingIngredients(meal, inventory);
     if (missingIngredients.length === 0) {
       alert('Everything for this meal is already in your inventory.');
       return;
     }
 
+    setMissingReview({
+      meal,
+      ingredients: missingIngredients.map((ingredient) => ({ ...ingredient })),
+    });
+  };
+
+  const addDiscoverIngredientsToShopping = async () => {
+    if (!missingReview) return;
+    const { meal, ingredients } = missingReview;
     const shops: Shop[] = ensureDefaultShops(getLocalShops().length > 0 ? getLocalShops() : DEFAULT_SHOPS);
     const shoppingList: ShoppingItem[] = getLocalShoppingList();
     const existingNames = new Set(shoppingList.map((item) => item.name.toLowerCase().trim()));
-    const newItems = missingIngredients
+    const newItems = ingredients
       .filter((ingredient) => !existingNames.has(ingredient.name.toLowerCase().trim()))
       .map<ShoppingItem>((ingredient) => {
         const storeType = classifyShoppingItemStoreType(ingredient.name);
@@ -377,6 +393,7 @@ const MealPlanner: React.FC = () => {
     const nextShoppingList = [...shoppingList, ...newItems];
     setLocalShoppingList(nextShoppingList);
     await replaceRemoteShoppingList(nextShoppingList);
+    setMissingReview(null);
     alert(`Added ${newItems.length} ingredients to shopping.`);
   };
 
@@ -671,18 +688,18 @@ const MealPlanner: React.FC = () => {
                             <span>{meal.difficulty || 'Medium'}</span>
                           </div>
                         </div>
-                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                          <SecondaryButton type="button" onClick={() => setSelectedMeal(meal)} className="w-full px-3 py-2 sm:w-auto">
+                        <div className="grid w-full gap-2 sm:w-auto sm:grid-cols-[minmax(96px,1fr)_minmax(132px,1fr)_48px]">
+                          <SecondaryButton type="button" onClick={() => setSelectedMeal(meal)} className="w-full px-3 py-2">
                             View
                           </SecondaryButton>
-                          <PrimaryButton type="button" onClick={() => void addDiscoverIngredientsToShopping(meal)} className="w-full px-3 py-2 sm:w-auto">
+                          <PrimaryButton type="button" onClick={() => openDiscoverIngredientsReview(meal)} className="w-full px-3 py-2">
                             <ShoppingCart size={16} />
                             Add missing
                           </PrimaryButton>
                           <SecondaryButton
                             type="button"
                             onClick={() => removeFromDiscover(meal.id)}
-                            className="w-full px-3 py-2 sm:w-auto"
+                            className="w-full px-3 py-2"
                             aria-label={`Remove ${meal.title} from discover bank`}
                           >
                             <Trash2 size={16} />
@@ -782,36 +799,25 @@ const MealPlanner: React.FC = () => {
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block space-y-2">
               <span className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">Date</span>
-              <select
-                aria-label="Date"
+              <SelectMenu
+                ariaLabel="Date"
                 value={manualMealDraft.date}
-                onChange={(event) => setManualMealDraft((current) => ({ ...current, date: event.target.value }))}
-                className="w-full rounded-3xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none transition focus:border-neutral-950"
-              >
-                {dates.map((date) => (
-                  <option key={date} value={date}>
-                    {new Date(date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                  </option>
-                ))}
-              </select>
+                onChange={(value) => setManualMealDraft((current) => ({ ...current, date: value }))}
+                options={dates.map((date) => ({
+                  value: date,
+                  label: new Date(date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+                }))}
+              />
             </label>
 
             <label className="block space-y-2">
               <span className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">Meal slot</span>
-              <select
-                aria-label="Meal slot"
+              <SelectMenu
+                ariaLabel="Meal slot"
                 value={manualMealDraft.slot}
-                onChange={(event) =>
-                  setManualMealDraft((current) => ({ ...current, slot: event.target.value as MealSlot }))
-                }
-                className="w-full rounded-3xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none transition focus:border-neutral-950"
-              >
-                {MEAL_SLOTS.map((slot) => (
-                  <option key={slot} value={slot}>
-                    {slot}
-                  </option>
-                ))}
-              </select>
+                onChange={(value) => setManualMealDraft((current) => ({ ...current, slot: value as MealSlot }))}
+                options={MEAL_SLOTS.map((slot) => ({ value: slot, label: slot }))}
+              />
             </label>
           </div>
 
@@ -860,21 +866,21 @@ const MealPlanner: React.FC = () => {
             </label>
             <label className="block space-y-2">
               <span className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">Difficulty</span>
-              <select
-                aria-label="Difficulty"
+              <SelectMenu
+                ariaLabel="Difficulty"
                 value={manualMealDraft.difficulty}
-                onChange={(event) =>
+                onChange={(value) =>
                   setManualMealDraft((current) => ({
                     ...current,
-                    difficulty: event.target.value as ManualMealDraft['difficulty'],
+                    difficulty: value as ManualMealDraft['difficulty'],
                   }))
                 }
-                className="w-full rounded-3xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none transition focus:border-neutral-950"
-              >
-                <option value="Easy">Easy</option>
-                <option value="Medium">Medium</option>
-                <option value="Hard">Hard</option>
-              </select>
+                options={[
+                  { value: 'Easy', label: 'Easy' },
+                  { value: 'Medium', label: 'Medium' },
+                  { value: 'Hard', label: 'Hard' },
+                ]}
+              />
             </label>
           </div>
 
@@ -1033,6 +1039,82 @@ const MealPlanner: React.FC = () => {
             </SecondaryButton>
           </div>
         </div>
+      </SurfaceSheet>
+
+      <SurfaceSheet
+        open={Boolean(missingReview)}
+        onClose={() => setMissingReview(null)}
+        title={missingReview ? `Missing for ${missingReview.meal.title}` : 'Missing ingredients'}
+        description="Review the ingredients before sending them to shopping."
+        footer={
+          <div className="flex flex-wrap gap-2">
+            <PrimaryButton type="button" onClick={() => void addDiscoverIngredientsToShopping()} disabled={!missingReview || missingReview.ingredients.length === 0}>
+              <ShoppingCart size={16} />
+              Add to shopping
+            </PrimaryButton>
+            <SecondaryButton type="button" onClick={() => setMissingReview(null)}>
+              Cancel
+            </SecondaryButton>
+          </div>
+        }
+      >
+        {missingReview ? (
+          <div className="space-y-3">
+            {missingReview.ingredients.map((ingredient, index) => (
+              <div key={`${missingReview.meal.id}-missing-${index}`} className="grid gap-3 sm:grid-cols-[1fr_140px_auto]">
+                <input
+                  aria-label={`Missing ingredient name ${index + 1}`}
+                  value={ingredient.name}
+                  onChange={(event) =>
+                    setMissingReview((current) =>
+                      current
+                        ? {
+                            ...current,
+                            ingredients: current.ingredients.map((entry, entryIndex) =>
+                              entryIndex === index ? { ...entry, name: event.target.value } : entry,
+                            ),
+                          }
+                        : current,
+                    )
+                  }
+                  className="w-full rounded-3xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none transition focus:border-neutral-950"
+                />
+                <input
+                  aria-label={`Missing ingredient amount ${index + 1}`}
+                  value={ingredient.amount}
+                  onChange={(event) =>
+                    setMissingReview((current) =>
+                      current
+                        ? {
+                            ...current,
+                            ingredients: current.ingredients.map((entry, entryIndex) =>
+                              entryIndex === index ? { ...entry, amount: event.target.value } : entry,
+                            ),
+                          }
+                        : current,
+                    )
+                  }
+                  className="w-full rounded-3xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none transition focus:border-neutral-950"
+                />
+                <SecondaryButton
+                  type="button"
+                  onClick={() =>
+                    setMissingReview((current) =>
+                      current
+                        ? {
+                            ...current,
+                            ingredients: current.ingredients.filter((_, entryIndex) => entryIndex !== index),
+                          }
+                        : current,
+                    )
+                  }
+                >
+                  Remove
+                </SecondaryButton>
+              </div>
+            ))}
+          </div>
+        ) : null}
       </SurfaceSheet>
 
       <SurfaceSheet

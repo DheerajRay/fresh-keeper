@@ -28,6 +28,7 @@ import {
   PageHeader,
   Panel,
   PrimaryButton,
+  SelectMenu,
   SecondaryButton,
   SectionHeader,
   StatStrip,
@@ -487,17 +488,12 @@ const InventoryManager: React.FC = () => {
 
             <label className="block space-y-2">
               <span className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">Unit</span>
-              <select
+              <SelectMenu
+                ariaLabel="Unit"
                 value={newItemUnit}
-                onChange={(event) => setNewItemUnit(event.target.value)}
-                className="w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm outline-none transition focus:border-neutral-950"
-              >
-                {UNIT_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+                onChange={(value) => setNewItemUnit(value)}
+                options={UNIT_OPTIONS.map((option) => ({ value: option.value, label: option.label }))}
+              />
             </label>
           </div>
 

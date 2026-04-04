@@ -1,5 +1,5 @@
 ﻿import React, { useEffect, useMemo, useState } from 'react';
-import { Check, Loader2, Pencil, Plus, ShoppingCart, Sparkles, Trash2 } from 'lucide-react';
+import { Check, ChevronDown, Loader2, Pencil, Plus, ShoppingCart, Sparkles, Trash2 } from 'lucide-react';
 import { DEFAULT_SHOPS, STORE_TYPE_LABELS, STORE_TYPE_OPTIONS, UNIT_OPTIONS } from '../constants';
 import { InventoryItem, Shop, ShoppingItem, StoreType } from '../types';
 import { getShoppingSuggestions } from '../services/openai';
@@ -23,6 +23,7 @@ import {
   PageHeader,
   Panel,
   PrimaryButton,
+  SelectMenu,
   SecondaryButton,
   SectionHeader,
   SegmentedControl,
@@ -30,6 +31,12 @@ import {
   SurfaceSheet,
   cx,
 } from './ui';
+
+type MissingIngredientDraft = {
+  name: string;
+  amount: string;
+  inInventory: boolean;
+};
 
 const ShoppingListManager: React.FC = () => {
   const [shoppingList, setShoppingList] = useState<ShoppingItem[]>(() => getLocalShoppingList());
@@ -40,6 +47,8 @@ const ShoppingListManager: React.FC = () => {
   const [showStoreSheet, setShowStoreSheet] = useState(false);
   const [showSuggestionHelp, setShowSuggestionHelp] = useState(false);
   const [editingItem, setEditingItem] = useState<ShoppingItem | null>(null);
+  const [reviewMealTitle, setReviewMealTitle] = useState('');
+  const [reviewIngredients, setReviewIngredients] = useState<MissingIngredientDraft[]>([]);
   const [newItemName, setNewItemName] = useState('');
   const [newItemQuantity, setNewItemQuantity] = useState(1);
   const [newItemUnit, setNewItemUnit] = useState('item');
@@ -48,6 +57,7 @@ const ShoppingListManager: React.FC = () => {
   const [newShopType, setNewShopType] = useState<StoreType>('grocery');
   const [hasTouchedShopType, setHasTouchedShopType] = useState(false);
   const [remoteHydrated, setRemoteHydrated] = useState(false);
+  const [openStoreType, setOpenStoreType] = useState<StoreType | null>('grocery');
 
   useEffect(() => {
     let active = true;
@@ -107,6 +117,12 @@ const ShoppingListManager: React.FC = () => {
       })),
     [shoppingList, shops],
   );
+
+  useEffect(() => {
+    if (groupedShoppingList.some((group) => group.type === openStoreType && group.stores.length > 0)) return;
+    const firstWithItems = groupedShoppingList.find((group) => group.stores.length > 0);
+    setOpenStoreType(firstWithItems?.type || null);
+  }, [groupedShoppingList, openStoreType]);
 
   const handleGenerateSuggestions = async () => {
     const inventory: InventoryItem[] = getLocalInventory();
@@ -300,78 +316,96 @@ const ShoppingListManager: React.FC = () => {
             ) : (
               groupedShoppingList.map((group) => (
                 <div key={group.type} className="space-y-3">
-                  <div className="border-b border-neutral-200 pb-2">
-                    <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-neutral-500">
+                  <button
+                    type="button"
+                    onClick={() => setOpenStoreType((current) => (current === group.type ? null : group.type))}
+                    className="flex w-full items-center justify-between border-b border-neutral-200 pb-2 text-left"
+                  >
+                    <span className="text-sm font-semibold uppercase tracking-[0.18em] text-neutral-500">
                       {STORE_TYPE_LABELS[group.type]}
-                    </h3>
-                  </div>
+                    </span>
+                    <span className="flex items-center gap-3 text-xs uppercase tracking-[0.16em] text-neutral-400">
+                      <span>
+                        {group.stores.reduce((count, storeGroup) => count + storeGroup.items.length, 0)} items
+                      </span>
+                      <ChevronDown size={14} className={cx('transition', openStoreType === group.type && 'rotate-180')} />
+                    </span>
+                  </button>
 
-                  {group.stores.map(({ shop, items }) => (
-                    <div key={shop.id} className="space-y-3">
-                      <div className="flex items-center justify-between text-sm text-neutral-500">
-                        <span className="font-semibold text-neutral-950">{shop.name}</span>
-                        <span>{items.length} items</span>
+                  {openStoreType === group.type ? (
+                    group.stores.length === 0 ? (
+                      <div className="rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 px-4 py-4 text-sm text-neutral-500">
+                        No items routed here.
                       </div>
-                      <div className="space-y-3">
-                        {items.map((item) => (
-                          <div
-                            key={item.id}
-                            className={cx(
-                              'border px-4 py-4 transition',
-                              item.isChecked
-                                ? 'border-neutral-200 bg-neutral-100 text-neutral-500'
-                                : 'border-neutral-200 bg-white text-neutral-900 hover:border-neutral-400',
-                            )}
-                          >
-                            <div className="flex items-start justify-between gap-4">
-                              <div className="flex items-start gap-3">
-                                <button
-                                  type="button"
-                                  onClick={() => toggleCheck(item.id)}
-                                  className={cx(
-                                    'mt-0.5 flex h-6 w-6 items-center justify-center rounded-full border transition',
-                                    item.isChecked
-                                      ? 'border-neutral-950 bg-transparent text-neutral-950'
-                                      : 'border-neutral-300 bg-white text-transparent',
-                                  )}
-                                  aria-label={`Mark ${item.name} as ${item.isChecked ? 'unchecked' : 'checked'}`}
-                                >
-                                  <Check size={14} />
-                                </button>
-                                <div>
-                                  <div className="flex flex-wrap items-center gap-2">
-                                    <p className={cx('text-sm font-semibold', item.isChecked && 'line-through')}>{item.name}</p>
-                                    <span className="rounded-full border border-neutral-300 px-2.5 py-1 text-[11px] text-neutral-500">
-                                      {item.quantity} {item.unit}
-                                    </span>
-                                    <span className="rounded-full border border-neutral-300 px-2.5 py-1 text-[11px] text-neutral-500">
-                                      {item.source === 'discover_recipe' ? 'Discover' : item.source === 'restock' ? 'Restock' : 'Manual'}
-                                    </span>
+                    ) : (
+                      group.stores.map(({ shop, items }) => (
+                        <div key={shop.id} className="space-y-3">
+                          <div className="flex items-center justify-between text-sm text-neutral-500">
+                            <span className="font-semibold text-neutral-950">{shop.name}</span>
+                            <span>{items.length} items</span>
+                          </div>
+                          <div className="space-y-3">
+                            {items.map((item) => (
+                              <div
+                                key={item.id}
+                                className={cx(
+                                  'border px-4 py-4 transition',
+                                  item.isChecked
+                                    ? 'border-neutral-200 bg-neutral-100 text-neutral-500'
+                                    : 'border-neutral-200 bg-white text-neutral-900 hover:border-neutral-400',
+                                )}
+                              >
+                                <div className="flex items-start justify-between gap-4">
+                                  <div className="flex items-start gap-3">
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleCheck(item.id)}
+                                      className={cx(
+                                        'mt-0.5 flex h-6 w-6 items-center justify-center rounded-full border transition',
+                                        item.isChecked
+                                          ? 'border-neutral-950 bg-transparent text-neutral-950'
+                                          : 'border-neutral-300 bg-white text-transparent',
+                                      )}
+                                      aria-label={`Mark ${item.name} as ${item.isChecked ? 'unchecked' : 'checked'}`}
+                                    >
+                                      <Check size={14} />
+                                    </button>
+                                    <div>
+                                      <div className="flex flex-wrap items-center gap-2">
+                                        <p className={cx('text-sm font-semibold', item.isChecked && 'line-through')}>{item.name}</p>
+                                        <span className="rounded-full border border-neutral-300 px-2.5 py-1 text-[11px] text-neutral-500">
+                                          {item.quantity} {item.unit}
+                                        </span>
+                                        <span className="rounded-full border border-neutral-300 px-2.5 py-1 text-[11px] text-neutral-500">
+                                          {item.source === 'discover_recipe' ? 'Discover' : item.source === 'restock' ? 'Restock' : 'Manual'}
+                                        </span>
+                                      </div>
+                                      {item.reason ? <p className="mt-2 text-sm text-neutral-500">{item.reason}</p> : null}
+                                    </div>
                                   </div>
-                                  {item.reason ? <p className="mt-2 text-sm text-neutral-500">{item.reason}</p> : null}
+
+                                  <div className="flex items-center gap-2">
+                                    <SecondaryButton type="button" onClick={() => setEditingItem(item)} className="px-3 py-2">
+                                      <span className="sr-only">Edit {item.name}</span>
+                                      <Pencil size={16} />
+                                    </SecondaryButton>
+                                    <SecondaryButton
+                                      type="button"
+                                      onClick={() => removeShoppingItem(item.id)}
+                                      className="px-3 py-2"
+                                      aria-label={`Remove ${item.name}`}
+                                    >
+                                      <Trash2 size={16} />
+                                    </SecondaryButton>
+                                  </div>
                                 </div>
                               </div>
-
-                              <div className="flex items-center gap-2">
-                                <SecondaryButton type="button" onClick={() => setEditingItem(item)} className="px-3 py-2">
-                                  <span className="sr-only">Edit {item.name}</span>
-                                  <Pencil size={16} />
-                                </SecondaryButton>
-                                <SecondaryButton
-                                  type="button"
-                                  onClick={() => removeShoppingItem(item.id)}
-                                  className="px-3 py-2"
-                                  aria-label={`Remove ${item.name}`}
-                                >
-                                  <Trash2 size={16} />
-                                </SecondaryButton>
-                              </div>
-                            </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
+                        </div>
+                      ))
+                    )
+                  ) : null}
                 </div>
               ))
             )}
@@ -478,34 +512,24 @@ const ShoppingListManager: React.FC = () => {
 
             <label className="block space-y-2">
               <span className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">Unit</span>
-              <select
+              <SelectMenu
+                ariaLabel="Unit"
                 value={newItemUnit}
-                onChange={(event) => setNewItemUnit(event.target.value)}
-                className="min-h-[52px] w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 text-sm outline-none transition focus:border-neutral-950"
-              >
-                {UNIT_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+                onChange={(value) => setNewItemUnit(value)}
+                options={UNIT_OPTIONS.map((option) => ({ value: option.value, label: option.label }))}
+              />
             </label>
           </div>
 
           <label className="block space-y-2">
             <span className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">Store</span>
-            <select
+            <SelectMenu
+              ariaLabel="Store"
               value={newItemShopId}
-              onChange={(event) => setNewItemShopId(event.target.value)}
-              className="min-h-[52px] w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 text-sm outline-none transition focus:border-neutral-950"
-            >
-              <option value="">Auto-route by store type</option>
-              {shops.map((shop) => (
-                <option key={shop.id} value={shop.id}>
-                  {shop.name}
-                </option>
-              ))}
-            </select>
+              onChange={(value) => setNewItemShopId(value)}
+              placeholder="Auto-route by store type"
+              options={shops.map((shop) => ({ value: shop.id, label: shop.name }))}
+            />
           </label>
         </form>
       </SurfaceSheet>
@@ -607,40 +631,30 @@ const ShoppingListManager: React.FC = () => {
 
               <label className="block space-y-2">
                 <span className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">Unit</span>
-                <select
+                <SelectMenu
+                  ariaLabel="Unit"
                   value={editingItem.unit}
-                  onChange={(event) => setEditingItem({ ...editingItem, unit: event.target.value })}
-                  className="w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm outline-none transition focus:border-neutral-950"
-                >
-                  {UNIT_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(value) => setEditingItem({ ...editingItem, unit: value })}
+                  options={UNIT_OPTIONS.map((option) => ({ value: option.value, label: option.label }))}
+                />
               </label>
             </div>
 
             <label className="block space-y-2">
               <span className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">Store</span>
-              <select
+              <SelectMenu
+                ariaLabel="Store"
                 value={editingItem.shopId || ''}
-                onChange={(event) => {
-                  const nextShop = shops.find((shop) => shop.id === event.target.value);
+                onChange={(value) => {
+                  const nextShop = shops.find((shop) => shop.id === value);
                   setEditingItem({
                     ...editingItem,
-                    shopId: event.target.value || undefined,
+                    shopId: value || undefined,
                     storeType: nextShop?.type || editingItem.storeType,
                   });
                 }}
-                className="w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm outline-none transition focus:border-neutral-950"
-              >
-                {shops.map((shop) => (
-                  <option key={shop.id} value={shop.id}>
-                    {shop.name}
-                  </option>
-                ))}
-              </select>
+                options={shops.map((shop) => ({ value: shop.id, label: shop.name }))}
+              />
             </label>
           </div>
         ) : null}
