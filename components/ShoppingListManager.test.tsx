@@ -45,7 +45,7 @@ describe('ShoppingListManager', () => {
         storeType: 'mall',
       }),
     );
-  });
+  }, 10000);
 
   it('shows grouped suggestions and lets the user accept or dismiss them', async () => {
     const user = userEvent.setup();

@@ -150,8 +150,8 @@ export const AppShell: React.FC<{ displayName?: string; onSignOut?: () => void }
   }, [showMenu]);
 
   return (
-    <div className="app-shell flex min-h-screen w-full min-w-0 flex-col bg-[#f5f5f3] text-neutral-950 max-md:h-[100dvh] max-md:max-h-[100dvh] max-md:overflow-hidden">
-      <header className="app-header z-50 shrink-0 border-b border-neutral-200 bg-white">
+    <div className="app-shell flex h-[100dvh] w-full min-w-0 flex-col overflow-hidden bg-[#f5f5f3] text-neutral-950">
+      <header className="app-header sticky top-0 z-50 shrink-0 border-b border-neutral-200 bg-white">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-3 md:px-6">
           <div className="flex items-center gap-3">
             <div className="app-brand-mark rounded-2xl border border-neutral-950 bg-transparent p-2 text-neutral-950">

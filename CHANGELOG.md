@@ -4,6 +4,12 @@ All notable changes to this project should be documented in this file.
 
 This project starts versioning with Semantic Versioning.
 
+## [0.5.16] - 2026-04-04
+
+- Pinned the desktop app header so navigation stays fixed while the page content scrolls underneath it.
+- Increased the visible spread between Small, Medium, and Large sizing modes across typography, spacing, controls, and navigation density.
+- Pushed themes further beyond simple recoloring by varying panel layering, elevated surfaces, nav emphasis, active states, and empty-state treatment.
+
 ## [0.5.15] - 2026-04-04
 
 - Strengthened the appearance system so Small, Medium, and Large now create clearly visible typography and spacing changes across the app.
