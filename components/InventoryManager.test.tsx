@@ -75,7 +75,8 @@ describe('InventoryManager', () => {
 
     render(<InventoryManager />);
 
-    await user.click(screen.getByRole('button', { name: /scan item/i }));
+    await user.click(screen.getByRole('button', { name: /add to fridge/i }));
+    await user.click(screen.getByRole('button', { name: /use camera scan/i }));
 
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
     const file = new File(['image-bytes'], 'banana.jpg', { type: 'image/jpeg' });
@@ -103,7 +104,8 @@ describe('InventoryManager', () => {
 
     render(<InventoryManager />);
 
-    await user.click(screen.getByRole('button', { name: /scan item/i }));
+    await user.click(screen.getByRole('button', { name: /add to fridge/i }));
+    await user.click(screen.getByRole('button', { name: /use camera scan/i }));
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
 
     fireEvent.change(fileInput, { target: { files: [new File(['a'], 'soap.jpg', { type: 'image/jpeg' })] } });
@@ -137,7 +139,8 @@ describe('InventoryManager', () => {
 
     render(<InventoryManager />);
 
-    await user.click(screen.getByRole('button', { name: /scan item/i }));
+    await user.click(screen.getByRole('button', { name: /add to fridge/i }));
+    await user.click(screen.getByRole('button', { name: /use camera scan/i }));
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
     fireEvent.change(fileInput, { target: { files: [new File(['x'], 'broken.jpg', { type: 'image/jpeg' })] } });
 

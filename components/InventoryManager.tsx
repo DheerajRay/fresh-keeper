@@ -1,6 +1,5 @@
 ﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Camera,
   ChevronRight,
   Loader2,
   Minus,
@@ -356,15 +355,6 @@ const InventoryManager: React.FC = () => {
       <Panel className="p-4 md:p-5">
         <SectionHeader
           title="Inventory list"
-          
-          action={
-            <div className="flex flex-wrap gap-2">
-              <SecondaryButton type="button" onClick={() => fileInputRef.current?.click()} disabled={isScanning}>
-                {isScanning ? <Loader2 size={18} className="animate-spin" /> : <Camera size={18} />}
-                {isScanning ? 'Scanning' : 'Scan item'}
-              </SecondaryButton>
-            </div>
-          }
         />
 
         <div className="mt-5 space-y-5">

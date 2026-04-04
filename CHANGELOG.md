@@ -4,6 +4,13 @@ All notable changes to this project should be documented in this file.
 
 This project starts versioning with Semantic Versioning.
 
+## [0.5.20] - 2026-04-04
+
+- Turned `Consume soon`, `Plan bank`, and `Discover bank` into collapsible meal-planner sections so users can shorten the page and open only the bank they need.
+- Replaced the larger stacked meal-bank action buttons with tighter icon-led controls to reduce card height and keep planner actions more compact.
+- Removed the duplicate `Scan item` button from the My Fridge list surface so scanning now lives only inside the unified add flow.
+- Updated inventory tests to exercise scanning from the add sheet instead of a separate list-level action.
+
 ## [0.5.19] - 2026-04-04
 
 - Added a `Consume soon` layer to the Meal Plan page so the planner can surface ready-to-eat leftovers, fruit, drinks, desserts, snacks, and similar items that should be used before expiry.

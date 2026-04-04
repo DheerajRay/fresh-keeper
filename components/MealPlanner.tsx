@@ -1,5 +1,5 @@
 ﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { CalendarDays, Loader2, Plus, RefreshCw, ShoppingCart, Trash2 } from 'lucide-react';
+import { CalendarDays, ChevronDown, Eye, Loader2, Plus, RefreshCw, ShoppingCart, Trash2 } from 'lucide-react';
 import { DEFAULT_SHOPS, DIETARY_OPTIONS } from '../constants';
 import {
   AssignedMeal,
@@ -35,6 +35,7 @@ import { classifyShoppingItemStoreType, ensureDefaultShops, getDefaultShopForTyp
 import {
   EmptyState,
   FloatingActionButton,
+  IconButton,
   MobileStatsButton,
   PageHeader,
   Panel,
@@ -91,6 +92,8 @@ type MissingReviewState = {
   meal: DiscoveredMeal;
   ingredients: Array<{ name: string; amount: string; inInventory: boolean }>;
 };
+
+type PlannerSectionKey = 'consumeSoon' | 'planBank' | 'discoverBank';
 
 type ConsumeSoonIdea = {
   id: string;
@@ -159,6 +162,11 @@ const MealPlanner: React.FC = () => {
   const [manualMealOpen, setManualMealOpen] = useState(false);
   const [manualMealLoading, setManualMealLoading] = useState(false);
   const [missingReview, setMissingReview] = useState<MissingReviewState | null>(null);
+  const [openSections, setOpenSections] = useState<Record<PlannerSectionKey, boolean>>({
+    consumeSoon: true,
+    planBank: true,
+    discoverBank: true,
+  });
   const [craving, setCraving] = useState('');
   const [selectedRestrictions, setSelectedRestrictions] = useState<DietaryRestriction[]>(() => getLocalDietaryRestrictions());
   const [remoteHydrated, setRemoteHydrated] = useState(false);
@@ -437,6 +445,10 @@ const MealPlanner: React.FC = () => {
     alert(`Added ${newItems.length} ingredients to shopping.`);
   };
 
+  const toggleSection = (section: PlannerSectionKey) => {
+    setOpenSections((current) => ({ ...current, [section]: !current[section] }));
+  };
+
   return (
     <div className="space-y-8">
       <PageHeader
@@ -565,90 +577,98 @@ const MealPlanner: React.FC = () => {
 
           {consumeSoonIdeas.length > 0 ? (
             <Panel className="p-4 md:p-5">
-              <SectionHeader title="Consume soon" />
-
-              <div className="mt-6 grid gap-3">
-                {consumeSoonIdeas.map((idea) => (
-                  <div key={idea.id} className="border border-neutral-200 bg-white px-4 py-4">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-base font-semibold text-neutral-950">{idea.title}</h3>
-                      <span className="rounded-full border border-neutral-300 px-2.5 py-1 text-[11px] text-neutral-500">
-                        {CONSUME_KIND_LABELS[idea.kind]}
-                      </span>
-                      <span className="rounded-full border border-neutral-300 px-2.5 py-1 text-[11px] text-neutral-500">
-                        {idea.urgency}
-                      </span>
+              <CollapsibleMealSection
+                title="Consume soon"
+                badge={`${consumeSoonIdeas.length}`}
+                open={openSections.consumeSoon}
+                onToggle={() => toggleSection('consumeSoon')}
+              >
+                <div className="mt-6 grid gap-3">
+                  {consumeSoonIdeas.map((idea) => (
+                    <div key={idea.id} className="border border-neutral-200 bg-white px-4 py-4">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="text-base font-semibold text-neutral-950">{idea.title}</h3>
+                        <span className="rounded-full border border-neutral-300 px-2.5 py-1 text-[11px] text-neutral-500">
+                          {CONSUME_KIND_LABELS[idea.kind]}
+                        </span>
+                        <span className="rounded-full border border-neutral-300 px-2.5 py-1 text-[11px] text-neutral-500">
+                          {idea.urgency}
+                        </span>
+                      </div>
+                      <p className="mt-3 text-sm leading-6 text-neutral-600">{idea.suggestion}</p>
                     </div>
-                    <p className="mt-3 text-sm leading-6 text-neutral-600">{idea.suggestion}</p>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              </CollapsibleMealSection>
             </Panel>
           ) : null}
 
           <Panel className="p-4 md:p-5">
-            <SectionHeader
+            <CollapsibleMealSection
               title="Plan bank"
-              
-            />
-
-            <div className="mt-6 space-y-3">
-              {planBank.length === 0 ? (
-                <EmptyState
-                  title="No inventory-backed ideas yet"
-                  description="Refresh the bank when inventory changes."
-                  action={
-                    <PrimaryButton type="button" onClick={() => void generatePlanBank()} disabled={activeGenerator === 'plan'}>
-                      {activeGenerator === 'plan' ? 'Refreshing' : 'Build plan bank'}
-                    </PrimaryButton>
-                  }
-                />
-              ) : (
-                planBank.map((meal) => (
-                  <div key={meal.id} className="border border-neutral-200 bg-white px-4 py-4 transition hover:border-neutral-400">
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                      <div className="space-y-2">
+              badge={`${planBank.length}`}
+              open={openSections.planBank}
+              onToggle={() => toggleSection('planBank')}
+            >
+              <div className="mt-6 space-y-3">
+                {planBank.length === 0 ? (
+                  <EmptyState
+                    title="No inventory-backed ideas yet"
+                    description="Refresh the bank when inventory changes."
+                    action={
+                      <PrimaryButton type="button" onClick={() => void generatePlanBank()} disabled={activeGenerator === 'plan'}>
+                        {activeGenerator === 'plan' ? 'Refreshing' : 'Build plan bank'}
+                      </PrimaryButton>
+                    }
+                  />
+                ) : (
+                  planBank.map((meal) => (
+                    <div key={meal.id} className="border border-neutral-200 bg-white px-4 py-4 transition hover:border-neutral-400">
+                      <div className="space-y-3">
+                        <div className="space-y-2">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="text-base font-semibold text-neutral-950">{meal.title}</h3>
+                            <span className="rounded-full border border-neutral-300 px-2.5 py-1 text-[11px] text-neutral-500">
+                              {meal.type}
+                            </span>
+                            <span className="rounded-full border border-neutral-300 px-2.5 py-1 text-[11px] text-neutral-500">
+                              {meal.inventoryMatchScore}% inventory fit
+                            </span>
+                          </div>
+                          <p className="text-sm text-neutral-600">{meal.description}</p>
+                          <div className="flex flex-wrap gap-3 text-xs text-neutral-500">
+                            <span>{meal.prepTime || '20 min'}</span>
+                            <span>{meal.difficulty || 'Medium'}</span>
+                            <span>{meal.expiringItemsUsed.length} expiring items used</span>
+                          </div>
+                        </div>
                         <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="text-base font-semibold text-neutral-950">{meal.title}</h3>
-                          <span className="rounded-full border border-neutral-300 px-2.5 py-1 text-[11px] text-neutral-500">
-                            {meal.type}
-                          </span>
-                          <span className="rounded-full border border-neutral-300 px-2.5 py-1 text-[11px] text-neutral-500">
-                            {meal.inventoryMatchScore}% inventory fit
-                          </span>
+                          <IconButton type="button" onClick={() => setSelectedMeal(meal)} className="min-h-[40px] gap-2 px-3 py-2">
+                            <Eye size={15} />
+                            <span>View</span>
+                          </IconButton>
+                          <PrimaryButton
+                            type="button"
+                            onClick={() =>
+                              setScheduleState({
+                                meal,
+                                mode: 'schedule',
+                                selectedDate,
+                                selectedSlot: meal.type,
+                              })
+                            }
+                            className="min-h-[40px] px-3 py-2"
+                          >
+                            <CalendarDays size={15} />
+                            <span>Schedule</span>
+                          </PrimaryButton>
                         </div>
-                        <p className="text-sm text-neutral-600">{meal.description}</p>
-                        <div className="flex flex-wrap gap-3 text-xs text-neutral-500">
-                          <span>{meal.prepTime || '20 min'}</span>
-                          <span>{meal.difficulty || 'Medium'}</span>
-                          <span>{meal.expiringItemsUsed.length} expiring items used</span>
-                        </div>
-                      </div>
-                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                        <SecondaryButton type="button" onClick={() => setSelectedMeal(meal)} className="w-full px-3 py-2 sm:w-auto">
-                          View
-                        </SecondaryButton>
-                        <PrimaryButton
-                          type="button"
-                          onClick={() =>
-                            setScheduleState({
-                              meal,
-                              mode: 'schedule',
-                              selectedDate,
-                              selectedSlot: meal.type,
-                            })
-                          }
-                          className="w-full px-3 py-2 sm:w-auto"
-                        >
-                          <CalendarDays size={16} />
-                          Schedule
-                        </PrimaryButton>
                       </div>
                     </div>
-                  </div>
-                ))
-              )}
-            </div>
+                  ))
+                )}
+              </div>
+            </CollapsibleMealSection>
           </Panel>
         </div>
       ) : (
@@ -711,69 +731,72 @@ const MealPlanner: React.FC = () => {
           </Panel>
 
           <Panel className="p-4 md:p-5">
-            <SectionHeader
+            <CollapsibleMealSection
               title="Discover bank"
-              
+              badge={`${discoverQueue.length}`}
+              open={openSections.discoverBank}
+              onToggle={() => toggleSection('discoverBank')}
               action={
                 discoverQueue.length > 0 ? (
-                  <SecondaryButton type="button" onClick={() => setDiscoverQueue([])}>
-                    Clear bank
+                  <SecondaryButton type="button" onClick={() => setDiscoverQueue([])} className="min-h-[40px] px-3 py-2">
+                    Clear
                   </SecondaryButton>
                 ) : null
               }
-            />
-
-            <div className="mt-6 space-y-3">
-              {discoverQueue.length === 0 ? (
-                <EmptyState
-                  title="No discovered meals yet"
-                  description="Generate meals to build the discover bank."
-                />
-              ) : (
-                discoverQueue.map((meal) => {
-                  const missing = getMissingIngredients(meal, inventory);
-                  return (
-                    <div key={meal.id} className="border border-neutral-200 bg-white px-4 py-4 transition hover:border-neutral-400">
-                      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                        <div className="space-y-2">
+            >
+              <div className="mt-6 space-y-3">
+                {discoverQueue.length === 0 ? (
+                  <EmptyState
+                    title="No discovered meals yet"
+                    description="Generate meals to build the discover bank."
+                  />
+                ) : (
+                  discoverQueue.map((meal) => {
+                    const missing = getMissingIngredients(meal, inventory);
+                    return (
+                      <div key={meal.id} className="border border-neutral-200 bg-white px-4 py-4 transition hover:border-neutral-400">
+                        <div className="space-y-3">
+                          <div className="space-y-2">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className="text-base font-semibold text-neutral-950">{meal.title}</h3>
+                              <span className="rounded-full border border-neutral-300 px-2.5 py-1 text-[11px] text-neutral-500">
+                                {meal.type}
+                              </span>
+                              <span className="rounded-full border border-neutral-300 px-2.5 py-1 text-[11px] text-neutral-500">
+                                {missing.length === 0 ? 'Already in inventory' : `${missing.length} missing ingredients`}
+                              </span>
+                            </div>
+                            <p className="text-sm text-neutral-600">{meal.description}</p>
+                            <div className="flex flex-wrap gap-4 text-xs text-neutral-500">
+                              <span>{meal.prepTime || '20 min'}</span>
+                              <span>{meal.difficulty || 'Medium'}</span>
+                            </div>
+                          </div>
                           <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="text-base font-semibold text-neutral-950">{meal.title}</h3>
-                            <span className="rounded-full border border-neutral-300 px-2.5 py-1 text-[11px] text-neutral-500">
-                              {meal.type}
-                            </span>
-                            <span className="rounded-full border border-neutral-300 px-2.5 py-1 text-[11px] text-neutral-500">
-                              {missing.length === 0 ? 'Already in inventory' : `${missing.length} missing ingredients`}
-                            </span>
+                            <IconButton type="button" onClick={() => setSelectedMeal(meal)} className="min-h-[40px] gap-2 px-3 py-2">
+                              <Eye size={15} />
+                              <span>View</span>
+                            </IconButton>
+                            <PrimaryButton type="button" onClick={() => openDiscoverIngredientsReview(meal)} className="min-h-[40px] px-3 py-2">
+                              <ShoppingCart size={15} />
+                              <span>Add missing</span>
+                            </PrimaryButton>
+                            <IconButton
+                              type="button"
+                              onClick={() => removeFromDiscover(meal.id)}
+                              className="min-h-[40px] px-3 py-2"
+                              aria-label={`Remove ${meal.title} from discover bank`}
+                            >
+                              <Trash2 size={15} />
+                            </IconButton>
                           </div>
-                          <p className="text-sm text-neutral-600">{meal.description}</p>
-                          <div className="flex flex-wrap gap-4 text-xs text-neutral-500">
-                            <span>{meal.prepTime || '20 min'}</span>
-                            <span>{meal.difficulty || 'Medium'}</span>
-                          </div>
-                        </div>
-                        <div className="grid w-full gap-2 sm:w-auto sm:grid-cols-[minmax(96px,1fr)_minmax(132px,1fr)_48px]">
-                          <SecondaryButton type="button" onClick={() => setSelectedMeal(meal)} className="w-full px-3 py-2">
-                            View
-                          </SecondaryButton>
-                          <PrimaryButton type="button" onClick={() => openDiscoverIngredientsReview(meal)} className="w-full px-3 py-2">
-                            <ShoppingCart size={16} />
-                            Add missing
-                          </PrimaryButton>
-                          <SecondaryButton
-                            type="button"
-                            onClick={() => removeFromDiscover(meal.id)}
-                            className="w-full px-3 py-2"
-                            aria-label={`Remove ${meal.title} from discover bank`}
-                          >
-                            <Trash2 size={16} />
-                          </SecondaryButton>
                         </div>
                       </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
+                    );
+                  })
+                )}
+              </div>
+            </CollapsibleMealSection>
           </Panel>
         </div>
       )}
@@ -1433,6 +1456,38 @@ function consumeKindPriority(kind: ConsumeSoonIdea['kind']) {
       return 5;
   }
 }
+
+const CollapsibleMealSection: React.FC<{
+  title: string;
+  badge?: string;
+  open: boolean;
+  onToggle: () => void;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}> = ({ title, badge, open, onToggle, action, children }) => (
+  <div className="space-y-4">
+    <div className="flex items-center gap-3">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className="flex min-w-0 flex-1 items-center justify-between gap-3 rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-left transition hover:border-neutral-300"
+      >
+        <div className="flex min-w-0 items-center gap-3">
+          <h2 className="text-base font-semibold uppercase tracking-[0.14em] text-neutral-950">{title}</h2>
+          {badge ? (
+            <span className="rounded-full border border-neutral-300 px-2.5 py-1 text-[11px] text-neutral-500">
+              {badge}
+            </span>
+          ) : null}
+        </div>
+        <ChevronDown size={16} className={cx('shrink-0 transition', open && 'rotate-180')} />
+      </button>
+      {action ? <div className="shrink-0">{action}</div> : null}
+    </div>
+    {open ? children : null}
+  </div>
+);
 
 export default MealPlanner;
 
