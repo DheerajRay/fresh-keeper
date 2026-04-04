@@ -303,7 +303,7 @@ export const FloatingActionButton: React.FC<
     aria-label={label}
     title={label}
     className={cx(
-      'app-button app-button-primary fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom))] right-4 z-40 inline-flex h-14 w-14 items-center justify-center rounded-full border border-neutral-950 bg-transparent text-neutral-950 transition md:hidden',
+      'app-button app-button-primary fixed bottom-[calc(6.25rem+env(safe-area-inset-bottom))] right-5 z-40 inline-flex h-14 w-14 items-center justify-center rounded-full border border-neutral-950 bg-transparent text-neutral-950 shadow-sm transition md:bottom-8 md:right-8 md:h-16 md:w-16',
       className,
     )}
     {...props}

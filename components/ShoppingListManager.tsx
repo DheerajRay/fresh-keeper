@@ -276,10 +276,6 @@ const ShoppingListManager: React.FC = () => {
         description="Route ingredients by store."
         action={
           <div className="flex flex-wrap gap-2">
-            <PrimaryButton type="button" onClick={() => setShowAddSheet(true)}>
-              <Plus size={18} />
-              Add item
-            </PrimaryButton>
             <SecondaryButton type="button" onClick={handleGenerateSuggestions} disabled={isLoading}>
               {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}
               {isLoading ? 'Thinking' : 'Generate suggestions'}
@@ -294,7 +290,7 @@ const ShoppingListManager: React.FC = () => {
 
       <StatStrip items={statItems} className="hidden md:grid" />
 
-      <FloatingActionButton label="Open shopping quick action" onClick={() => setShowAddSheet(true)}>
+      <FloatingActionButton label="Add item" onClick={() => setShowAddSheet(true)}>
         <Plus size={22} />
       </FloatingActionButton>
 

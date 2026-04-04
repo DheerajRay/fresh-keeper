@@ -414,12 +414,6 @@ const MealPlanner: React.FC = () => {
                 { value: 'discover', label: 'Discover' },
               ]}
             />
-            {mode === 'plan' ? (
-              <PrimaryButton type="button" onClick={openManualMeal}>
-                <Plus size={16} />
-                Add meal
-              </PrimaryButton>
-            ) : null}
             <MobileStatsButton title="Meal summary" items={statItems} />
           </div>
         }
@@ -428,7 +422,7 @@ const MealPlanner: React.FC = () => {
       <StatStrip items={statItems} className="hidden md:grid" />
 
       {mode === 'plan' ? (
-        <FloatingActionButton label="Open meal quick action" onClick={openManualMeal}>
+        <FloatingActionButton label="Add meal" onClick={openManualMeal}>
           <Plus size={22} />
         </FloatingActionButton>
       ) : null}

@@ -328,10 +328,6 @@ const InventoryManager: React.FC = () => {
         description="Track what is in storage."
         action={
           <div className="flex flex-wrap gap-2">
-            <PrimaryButton type="button" onClick={() => setShowAddSheet(true)}>
-              <Plus size={18} />
-              Add to Fridge
-            </PrimaryButton>
             <SecondaryButton type="button" onClick={() => setShowMapSheet(true)}>
               <Refrigerator size={18} />
               Zones
@@ -353,7 +349,7 @@ const InventoryManager: React.FC = () => {
 
       <StatStrip items={statItems} className="hidden md:grid" />
 
-      <FloatingActionButton label="Open fridge quick action" onClick={() => setShowAddSheet(true)}>
+      <FloatingActionButton label="Add to Fridge" onClick={() => setShowAddSheet(true)}>
         <Plus size={22} />
       </FloatingActionButton>
 

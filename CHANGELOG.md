@@ -4,6 +4,12 @@ All notable changes to this project should be documented in this file.
 
 This project starts versioning with Semantic Versioning.
 
+## [0.5.18] - 2026-04-04
+
+- Promoted the floating add action from mobile-only to both desktop and mobile for My Fridge, Meal Plan, and Shopping List.
+- Removed the duplicate header add buttons on those three screens so the floating action becomes the single add entry point.
+- Increased the floating action spacing slightly on mobile and desktop so it sits more comfortably above the dock and page edges.
+
 ## [0.5.17] - 2026-04-04
 
 - Added mobile floating add buttons to My Fridge, Meal Plan, and Shopping List, each reusing the existing add flow instead of introducing a separate interaction path.
