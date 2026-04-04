@@ -2,12 +2,13 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import MealPlanner, { enrichMeals, getInventory, getMissingIngredients } from './MealPlanner';
-import { getDiscoverMealIdeas, getPlanMealIdeas } from '../services/openai';
+import { getDiscoverMealIdeas, getManualMealRecipe, getPlanMealIdeas } from '../services/openai';
 import { ZoneId } from '../types';
 
 vi.mock('../services/openai', () => ({
   getPlanMealIdeas: vi.fn(),
   getDiscoverMealIdeas: vi.fn(),
+  getManualMealRecipe: vi.fn(),
   getMealSuggestions: vi.fn(),
   predictShopForItem: vi.fn(),
 }));
@@ -120,12 +121,31 @@ describe('MealPlanner', () => {
 
   it('lets the user add a manual meal directly into the schedule', async () => {
     const user = userEvent.setup();
+    vi.mocked(getManualMealRecipe).mockResolvedValue({
+      id: 'manual-idea-1',
+      title: 'Homemade ramen',
+      type: 'Dinner',
+      description: 'Brothy noodles with toppings.',
+      isRecipe: true,
+      expiringItemsUsed: [],
+      prepTime: '30 min',
+      difficulty: 'Medium',
+      chefTip: 'Finish with sesame oil.',
+      ingredients: [
+        { name: 'Ramen noodles', amount: '2 nests', inInventory: false },
+        { name: 'Broth', amount: '4 cups', inInventory: false },
+      ],
+      instructions: ['Heat the broth.', 'Cook noodles.', 'Assemble bowls.'],
+    } as any);
+
     render(<MealPlanner />);
 
-    await user.click(screen.getAllByRole('button', { name: /Manual meal/i })[0]);
-    await user.type(screen.getByPlaceholderText(/Friday taco night/i), 'Homemade ramen');
-    await user.selectOptions(screen.getByLabelText(/Meal slot/i), 'Dinner');
-    await user.type(screen.getByPlaceholderText(/Optional note for the meal/i), 'Use the good broth.');
+    await user.click(screen.getByRole('button', { name: /Add meal/i }));
+    await user.type(screen.getByLabelText(/Dish name/i), 'Homemade ramen');
+    await user.click(screen.getByRole('button', { name: /Fetch recipe draft/i }));
+    expect(await screen.findByLabelText(/Meal title/i)).toHaveValue('Homemade ramen');
+    await user.clear(screen.getByLabelText(/Chef tip/i));
+    await user.type(screen.getByLabelText(/Chef tip/i), 'Use the good broth.');
     await user.click(screen.getByRole('button', { name: /Save meal/i }));
 
     await waitFor(() => {

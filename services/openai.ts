@@ -214,6 +214,22 @@ export const getDiscoverMealIdeas = async (
   }
 };
 
+export const getManualMealRecipe = async (
+  dishName: string,
+  inventory: InventoryItem[],
+  dietaryRestrictions: string[] = [],
+  historySummary = '',
+): Promise<DiscoveredMeal | null> => {
+  const meals = await getDiscoverMealIdeas(
+    inventory,
+    `Create one practical recipe for this exact planned dish: "${dishName}". Keep the title close to the dish name and return a single distinct recipe, not variants.`,
+    dietaryRestrictions,
+    historySummary,
+  );
+
+  return meals[0] || null;
+};
+
 export const getMealSuggestions = async (
   inventory: InventoryItem[],
   _forDate: string,

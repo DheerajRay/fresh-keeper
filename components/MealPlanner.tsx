@@ -1,5 +1,5 @@
 ﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { CalendarDays, Loader2, RefreshCw, ShoppingCart, Trash2 } from 'lucide-react';
+import { CalendarDays, Loader2, Plus, RefreshCw, ShoppingCart, Trash2 } from 'lucide-react';
 import { DEFAULT_SHOPS, DIETARY_OPTIONS } from '../constants';
 import {
   AssignedMeal,
@@ -12,7 +12,7 @@ import {
   Shop,
   ShoppingItem,
 } from '../types';
-import { getDiscoverMealIdeas, getPlanMealIdeas } from '../services/openai';
+import { getDiscoverMealIdeas, getManualMealRecipe, getPlanMealIdeas } from '../services/openai';
 import {
   getLocalDietaryRestrictions,
   getLocalMealPlans,
@@ -73,11 +73,32 @@ type ScheduleState = {
   selectedSlot: MealSlot;
 };
 type ManualMealDraft = {
-  title: string;
+  dishName: string;
   date: string;
   slot: MealSlot;
-  note: string;
+  title: string;
+  description: string;
+  prepTime: string;
+  difficulty: 'Easy' | 'Medium' | 'Hard';
+  ingredients: Array<{ name: string; amount: string; inInventory: boolean }>;
+  instructions: string[];
+  chefTip: string;
 };
+
+function createManualMealDraft(date: string): ManualMealDraft {
+  return {
+    dishName: '',
+    date,
+    slot: 'Dinner',
+    title: '',
+    description: '',
+    prepTime: '20 min',
+    difficulty: 'Medium',
+    ingredients: [],
+    instructions: [],
+    chefTip: '',
+  };
+}
 
 const MealPlanner: React.FC = () => {
   const [mode, setMode] = useState<PlannerMode>('plan');
@@ -87,13 +108,11 @@ const MealPlanner: React.FC = () => {
   const [activeGenerator, setActiveGenerator] = useState<GeneratorMode>(null);
   const [selectedMeal, setSelectedMeal] = useState<MealSuggestion | null>(null);
   const [scheduleState, setScheduleState] = useState<ScheduleState | null>(null);
-  const [manualMealDraft, setManualMealDraft] = useState<ManualMealDraft>({
-    title: '',
-    date: new Date().toISOString().split('T')[0],
-    slot: 'Dinner',
-    note: '',
-  });
+  const [manualMealDraft, setManualMealDraft] = useState<ManualMealDraft>(() =>
+    createManualMealDraft(new Date().toISOString().split('T')[0]),
+  );
   const [manualMealOpen, setManualMealOpen] = useState(false);
+  const [manualMealLoading, setManualMealLoading] = useState(false);
   const [craving, setCraving] = useState('');
   const [selectedRestrictions, setSelectedRestrictions] = useState<DietaryRestriction[]>(() => getLocalDietaryRestrictions());
   const [remoteHydrated, setRemoteHydrated] = useState(false);
@@ -210,13 +229,33 @@ const MealPlanner: React.FC = () => {
   };
 
   const openManualMeal = () => {
-    setManualMealDraft({
-      title: '',
-      date: selectedDate,
-      slot: 'Dinner',
-      note: '',
-    });
+    setManualMealDraft(createManualMealDraft(selectedDate));
     setManualMealOpen(true);
+  };
+
+  const fetchManualMealDraft = async () => {
+    const dishName = manualMealDraft.dishName.trim();
+    if (!dishName) return;
+
+    setManualMealLoading(true);
+    const meal = await getManualMealRecipe(dishName, inventory, selectedRestrictions, historySummary);
+    setManualMealLoading(false);
+
+    if (!meal) {
+      alert('Could not build a recipe draft right now.');
+      return;
+    }
+
+    setManualMealDraft((current) => ({
+      ...current,
+      title: meal.title || dishName,
+      description: meal.description || '',
+      prepTime: meal.prepTime || current.prepTime,
+      difficulty: meal.difficulty || current.difficulty,
+      ingredients: meal.ingredients?.map((ingredient) => ({ ...ingredient })) || [],
+      instructions: meal.instructions ? [...meal.instructions] : [],
+      chefTip: meal.chefTip || '',
+    }));
   };
 
   const schedulePlanIdea = (meal: PlanIdea, date: string, slot: MealSlot) => {
@@ -239,7 +278,7 @@ const MealPlanner: React.FC = () => {
   };
 
   const saveManualMeal = () => {
-    const title = manualMealDraft.title.trim();
+    const title = (manualMealDraft.title || manualMealDraft.dishName).trim();
     if (!title) return;
 
     const manualMeal: AssignedMeal = {
@@ -247,9 +286,23 @@ const MealPlanner: React.FC = () => {
       title,
       type: manualMealDraft.slot,
       scheduledFor: manualMealDraft.slot,
-      description: manualMealDraft.note.trim() || 'Manual meal entry.',
-      isRecipe: false,
+      description: manualMealDraft.description.trim() || 'Manual meal entry.',
+      isRecipe: manualMealDraft.ingredients.length > 0 || manualMealDraft.instructions.length > 0,
       expiringItemsUsed: [],
+      prepTime: manualMealDraft.prepTime.trim() || undefined,
+      difficulty: manualMealDraft.difficulty,
+      ingredients: manualMealDraft.ingredients
+        .filter((ingredient) => ingredient.name.trim())
+        .map((ingredient) => ({
+          name: ingredient.name.trim(),
+          amount: ingredient.amount.trim() || 'To taste',
+          inInventory:
+            inventory.some(
+              (item) => item.name.toLowerCase().trim() === ingredient.name.toLowerCase().trim(),
+            ) || ingredient.inInventory,
+        })),
+      instructions: manualMealDraft.instructions.map((step) => step.trim()).filter(Boolean),
+      chefTip: manualMealDraft.chefTip.trim() || undefined,
       source: 'manual',
     };
 
@@ -258,7 +311,7 @@ const MealPlanner: React.FC = () => {
       return { ...current, [manualMealDraft.date]: [...existing, manualMeal] };
     });
     setManualMealOpen(false);
-    setManualMealDraft({ title: '', date: selectedDate, slot: 'Dinner', note: '' });
+    setManualMealDraft(createManualMealDraft(selectedDate));
   };
 
   const rescheduleMeal = (meal: AssignedMeal, oldDate: string, newDate: string, slot: MealSlot) => {
@@ -343,6 +396,12 @@ const MealPlanner: React.FC = () => {
                 { value: 'discover', label: 'Discover' },
               ]}
             />
+            {mode === 'plan' ? (
+              <PrimaryButton type="button" onClick={openManualMeal}>
+                <Plus size={16} />
+                Add meal
+              </PrimaryButton>
+            ) : null}
             <MobileStatsButton title="Meal summary" items={statItems} />
           </div>
         }
@@ -355,17 +414,11 @@ const MealPlanner: React.FC = () => {
           <Panel className="p-4 md:p-5">
             <SectionHeader
               title="Schedule meals"
-              
               action={
-                <div className="flex flex-wrap gap-2">
-                  <SecondaryButton type="button" onClick={openManualMeal}>
-                    Manual meal
-                  </SecondaryButton>
-                  <PrimaryButton type="button" onClick={() => void generatePlanBank()} disabled={activeGenerator === 'plan'}>
-                    {activeGenerator === 'plan' ? <Loader2 size={18} className="animate-spin" /> : <RefreshCw size={16} />}
-                    {activeGenerator === 'plan' ? 'Refreshing' : 'Refresh plan bank'}
-                  </PrimaryButton>
-                </div>
+                <PrimaryButton type="button" onClick={() => void generatePlanBank()} disabled={activeGenerator === 'plan'}>
+                  {activeGenerator === 'plan' ? <Loader2 size={18} className="animate-spin" /> : <RefreshCw size={16} />}
+                  {activeGenerator === 'plan' ? 'Refreshing' : 'Refresh plan bank'}
+                </PrimaryButton>
               }
             />
 
@@ -394,12 +447,7 @@ const MealPlanner: React.FC = () => {
               {assignedMeals.length === 0 ? (
                 <EmptyState
                   title="Nothing scheduled for this day"
-                  description="Assign a plan-bank meal or add one manually."
-                  action={
-                    <SecondaryButton type="button" onClick={openManualMeal}>
-                      Manual meal
-                    </SecondaryButton>
-                  }
+                  description="Assign a plan-bank meal or add one with Add meal."
                 />
               ) : (
                 <div className="space-y-3">
@@ -716,16 +764,16 @@ const MealPlanner: React.FC = () => {
       <SurfaceSheet
         open={manualMealOpen}
         onClose={() => setManualMealOpen(false)}
-        title="Manual meal"
-        description="Add a meal directly to your schedule."
+        title="Add meal"
+        description="Enter a dish, pull a recipe draft, then edit before saving."
       >
         <div className="space-y-4">
           <label className="block space-y-2">
-            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">Meal name</span>
+            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">Dish name</span>
             <input
-              aria-label="Meal name"
-              value={manualMealDraft.title}
-              onChange={(event) => setManualMealDraft((current) => ({ ...current, title: event.target.value }))}
+              aria-label="Dish name"
+              value={manualMealDraft.dishName}
+              onChange={(event) => setManualMealDraft((current) => ({ ...current, dishName: event.target.value }))}
               placeholder="e.g. Friday taco night"
               className="w-full rounded-3xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none transition focus:border-neutral-950"
             />
@@ -767,19 +815,217 @@ const MealPlanner: React.FC = () => {
             </label>
           </div>
 
+          <PrimaryButton
+            type="button"
+            onClick={() => void fetchManualMealDraft()}
+            disabled={manualMealLoading || !manualMealDraft.dishName.trim()}
+            className="w-full sm:w-auto"
+          >
+            {manualMealLoading ? <Loader2 size={18} className="animate-spin" /> : <RefreshCw size={16} />}
+            {manualMealLoading ? 'Building recipe' : 'Fetch recipe draft'}
+          </PrimaryButton>
+
           <label className="block space-y-2">
-            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">Notes</span>
+            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">Meal title</span>
+            <input
+              aria-label="Meal title"
+              value={manualMealDraft.title}
+              onChange={(event) => setManualMealDraft((current) => ({ ...current, title: event.target.value }))}
+              placeholder="Recipe title"
+              className="w-full rounded-3xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none transition focus:border-neutral-950"
+            />
+          </label>
+
+          <label className="block space-y-2">
+            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">Description</span>
             <textarea
-              aria-label="Notes"
-              value={manualMealDraft.note}
-              onChange={(event) => setManualMealDraft((current) => ({ ...current, note: event.target.value }))}
-              placeholder="Optional note for the meal."
+              aria-label="Description"
+              value={manualMealDraft.description}
+              onChange={(event) => setManualMealDraft((current) => ({ ...current, description: event.target.value }))}
+              placeholder="Short meal description."
               className="min-h-[96px] w-full rounded-3xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none transition focus:border-neutral-950"
             />
           </label>
 
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="block space-y-2">
+              <span className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">Prep time</span>
+              <input
+                aria-label="Prep time"
+                value={manualMealDraft.prepTime}
+                onChange={(event) => setManualMealDraft((current) => ({ ...current, prepTime: event.target.value }))}
+                placeholder="20 min"
+                className="w-full rounded-3xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none transition focus:border-neutral-950"
+              />
+            </label>
+            <label className="block space-y-2">
+              <span className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">Difficulty</span>
+              <select
+                aria-label="Difficulty"
+                value={manualMealDraft.difficulty}
+                onChange={(event) =>
+                  setManualMealDraft((current) => ({
+                    ...current,
+                    difficulty: event.target.value as ManualMealDraft['difficulty'],
+                  }))
+                }
+                className="w-full rounded-3xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none transition focus:border-neutral-950"
+              >
+                <option value="Easy">Easy</option>
+                <option value="Medium">Medium</option>
+                <option value="Hard">Hard</option>
+              </select>
+            </label>
+          </div>
+
+          <div className="space-y-3">
+            <SectionHeader
+              title="Ingredients"
+              action={
+                <SecondaryButton
+                  type="button"
+                  onClick={() =>
+                    setManualMealDraft((current) => ({
+                      ...current,
+                      ingredients: [...current.ingredients, { name: '', amount: '', inInventory: false }],
+                    }))
+                  }
+                >
+                  Add ingredient
+                </SecondaryButton>
+              }
+            />
+
+            {manualMealDraft.ingredients.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 px-4 py-4 text-sm text-neutral-500">
+                Fetch a recipe or add ingredients manually.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {manualMealDraft.ingredients.map((ingredient, index) => (
+                  <div key={`manual-ingredient-${index}`} className="grid gap-3 sm:grid-cols-[1fr_140px_auto]">
+                    <input
+                      aria-label={`Ingredient name ${index + 1}`}
+                      value={ingredient.name}
+                      onChange={(event) =>
+                        setManualMealDraft((current) => ({
+                          ...current,
+                          ingredients: current.ingredients.map((entry, entryIndex) =>
+                            entryIndex === index ? { ...entry, name: event.target.value } : entry,
+                          ),
+                        }))
+                      }
+                      placeholder="Ingredient"
+                      className="w-full rounded-3xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none transition focus:border-neutral-950"
+                    />
+                    <input
+                      aria-label={`Ingredient amount ${index + 1}`}
+                      value={ingredient.amount}
+                      onChange={(event) =>
+                        setManualMealDraft((current) => ({
+                          ...current,
+                          ingredients: current.ingredients.map((entry, entryIndex) =>
+                            entryIndex === index ? { ...entry, amount: event.target.value } : entry,
+                          ),
+                        }))
+                      }
+                      placeholder="Amount"
+                      className="w-full rounded-3xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none transition focus:border-neutral-950"
+                    />
+                    <SecondaryButton
+                      type="button"
+                      onClick={() =>
+                        setManualMealDraft((current) => ({
+                          ...current,
+                          ingredients: current.ingredients.filter((_, entryIndex) => entryIndex !== index),
+                        }))
+                      }
+                    >
+                      Remove
+                    </SecondaryButton>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-3">
+            <SectionHeader
+              title="Method"
+              action={
+                <SecondaryButton
+                  type="button"
+                  onClick={() =>
+                    setManualMealDraft((current) => ({
+                      ...current,
+                      instructions: [...current.instructions, ''],
+                    }))
+                  }
+                >
+                  Add step
+                </SecondaryButton>
+              }
+            />
+
+            {manualMealDraft.instructions.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 px-4 py-4 text-sm text-neutral-500">
+                Fetch a recipe or add steps manually.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {manualMealDraft.instructions.map((instruction, index) => (
+                  <div key={`manual-step-${index}`} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-neutral-500">Step {index + 1}</p>
+                      <SecondaryButton
+                        type="button"
+                        onClick={() =>
+                          setManualMealDraft((current) => ({
+                            ...current,
+                            instructions: current.instructions.filter((_, entryIndex) => entryIndex !== index),
+                          }))
+                        }
+                      >
+                        Remove
+                      </SecondaryButton>
+                    </div>
+                    <textarea
+                      aria-label={`Step ${index + 1}`}
+                      value={instruction}
+                      onChange={(event) =>
+                        setManualMealDraft((current) => ({
+                          ...current,
+                          instructions: current.instructions.map((entry, entryIndex) =>
+                            entryIndex === index ? event.target.value : entry,
+                          ),
+                        }))
+                      }
+                      placeholder="Describe this step."
+                      className="min-h-[88px] w-full rounded-3xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none transition focus:border-neutral-950"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <label className="block space-y-2">
+            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">Chef tip</span>
+            <textarea
+              aria-label="Chef tip"
+              value={manualMealDraft.chefTip}
+              onChange={(event) => setManualMealDraft((current) => ({ ...current, chefTip: event.target.value }))}
+              placeholder="Optional final tip."
+              className="min-h-[88px] w-full rounded-3xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none transition focus:border-neutral-950"
+            />
+          </label>
+
           <div className="flex flex-wrap gap-2">
-            <PrimaryButton type="button" onClick={saveManualMeal} disabled={!manualMealDraft.title.trim()}>
+            <PrimaryButton
+              type="button"
+              onClick={saveManualMeal}
+              disabled={!(manualMealDraft.title.trim() || manualMealDraft.dishName.trim())}
+            >
               Save meal
             </PrimaryButton>
             <SecondaryButton type="button" onClick={() => setManualMealOpen(false)}>

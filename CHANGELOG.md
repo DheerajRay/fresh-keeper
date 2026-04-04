@@ -4,6 +4,11 @@ All notable changes to this project should be documented in this file.
 
 This project starts versioning with Semantic Versioning.
 
+## [0.5.13] - 2026-04-04
+
+- Replaced the in-section `Manual meal` action with a top-level `Add meal` action in the meal planner header so the flow matches the rest of the app.
+- Changed manual meal entry into a recipe-draft editor: users now enter a dish name, fetch a recipe draft, then edit the title, ingredients, steps, and chef tip before saving it into the schedule.
+
 ## [0.5.12] - 2026-04-04
 
 - Added a manual meal sheet to the `Plan` tab so users can add meals directly to a date without relying on the plan bank.
