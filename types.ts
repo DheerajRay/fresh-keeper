@@ -75,6 +75,7 @@ export interface ShoppingItem {
 
 // --- MEAL PLANNING TYPES ---
 export type MealType = 'Breakfast' | 'Brunch' | 'Lunch' | 'Snack' | 'Dinner';
+export type MealSlot = MealType;
 
 export type DietaryRestriction = 'None' | 'Vegetarian' | 'Vegan' | 'Gluten-Free' | 'Dairy-Free' | 'Keto' | 'Paleo' | 'Low-Carb';
 
@@ -110,7 +111,8 @@ export interface DiscoveredMeal extends MealIdeaBase {
 }
 
 export interface AssignedMeal extends MealIdeaBase {
-  source?: 'plan_bank' | 'discover';
+  source?: 'plan_bank' | 'discover' | 'manual';
+  scheduledFor?: MealSlot;
 }
 
 export type MealSuggestion = PlanIdea | DiscoveredMeal | AssignedMeal;

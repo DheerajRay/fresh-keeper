@@ -6,6 +6,7 @@ import {
   DietaryRestriction,
   DiscoveredMeal,
   InventoryItem,
+  MealSlot,
   MealSuggestion,
   PlanIdea,
   Shop,
@@ -60,9 +61,23 @@ const COOKING_STAPLES = [
 ];
 
 const PLAN_BANK_KEY = '__plan_bank__';
+const MEAL_SLOTS: MealSlot[] = ['Breakfast', 'Brunch', 'Lunch', 'Snack', 'Dinner'];
 
 type PlannerMode = 'plan' | 'discover';
 type GeneratorMode = 'plan' | 'discover' | null;
+type ScheduleState = {
+  meal: PlanIdea | AssignedMeal;
+  mode: 'schedule' | 'move';
+  currentDate?: string;
+  selectedDate: string;
+  selectedSlot: MealSlot;
+};
+type ManualMealDraft = {
+  title: string;
+  date: string;
+  slot: MealSlot;
+  note: string;
+};
 
 const MealPlanner: React.FC = () => {
   const [mode, setMode] = useState<PlannerMode>('plan');
@@ -71,8 +86,14 @@ const MealPlanner: React.FC = () => {
   const [discoverQueue, setDiscoverQueue] = useState<DiscoveredMeal[]>(() => getLocalMealSuggestionQueue() as DiscoveredMeal[]);
   const [activeGenerator, setActiveGenerator] = useState<GeneratorMode>(null);
   const [selectedMeal, setSelectedMeal] = useState<MealSuggestion | null>(null);
-  const [planIdeaToSchedule, setPlanIdeaToSchedule] = useState<PlanIdea | null>(null);
-  const [mealToReschedule, setMealToReschedule] = useState<{ meal: AssignedMeal; currentDate: string } | null>(null);
+  const [scheduleState, setScheduleState] = useState<ScheduleState | null>(null);
+  const [manualMealDraft, setManualMealDraft] = useState<ManualMealDraft>({
+    title: '',
+    date: new Date().toISOString().split('T')[0],
+    slot: 'Dinner',
+    note: '',
+  });
+  const [manualMealOpen, setManualMealOpen] = useState(false);
   const [craving, setCraving] = useState('');
   const [selectedRestrictions, setSelectedRestrictions] = useState<DietaryRestriction[]>(() => getLocalDietaryRestrictions());
   const [remoteHydrated, setRemoteHydrated] = useState(false);
@@ -133,7 +154,10 @@ const MealPlanner: React.FC = () => {
   const historySummary = useMemo(() => buildMealHistorySummary(plans), [plans]);
   const planBank = useMemo(() => enrichMeals((plans[PLAN_BANK_KEY] || []) as PlanIdea[], inventory) as PlanIdea[], [inventory, plans]);
   const assignedMeals = useMemo(
-    () => enrichMeals((plans[selectedDate] || []) as AssignedMeal[], inventory) as AssignedMeal[],
+    () =>
+      (enrichMeals((plans[selectedDate] || []) as AssignedMeal[], inventory) as AssignedMeal[]).sort(
+        (left, right) => mealSlotOrder(left.scheduledFor ?? left.type) - mealSlotOrder(right.scheduledFor ?? right.type),
+      ),
     [inventory, plans, selectedDate],
   );
   const plannedCount = useMemo(
@@ -185,27 +209,74 @@ const MealPlanner: React.FC = () => {
     setCraving('');
   };
 
-  const schedulePlanIdea = (meal: PlanIdea, date: string) => {
-    const assigned = toAssignedMeal(meal, 'plan_bank');
-    setPlans((current) => {
-      const existing = current[date] || [];
-      if (existing.some((entry) => entry.id === assigned.id || entry.title === assigned.title)) return current;
-      return { ...current, [date]: [...existing, assigned] };
+  const openManualMeal = () => {
+    setManualMealDraft({
+      title: '',
+      date: selectedDate,
+      slot: 'Dinner',
+      note: '',
     });
-    setPlanIdeaToSchedule(null);
-    alert(`${meal.title} added to your meal plan.`);
+    setManualMealOpen(true);
   };
 
-  const rescheduleMeal = (meal: AssignedMeal, oldDate: string, newDate: string) => {
+  const schedulePlanIdea = (meal: PlanIdea, date: string, slot: MealSlot) => {
+    const assigned = toAssignedMeal(meal, 'plan_bank', slot);
     setPlans((current) => {
-      if (oldDate === newDate) return current;
+      const existing = current[date] || [];
+      if (
+        existing.some(
+          (entry) =>
+            entry.id === assigned.id ||
+            (entry.title === assigned.title && (entry as AssignedMeal).scheduledFor === assigned.scheduledFor),
+        )
+      ) {
+        return current;
+      }
+      return { ...current, [date]: [...existing, assigned] };
+    });
+    setScheduleState(null);
+    alert(`${meal.title} scheduled for ${slot.toLowerCase()}.`);
+  };
+
+  const saveManualMeal = () => {
+    const title = manualMealDraft.title.trim();
+    if (!title) return;
+
+    const manualMeal: AssignedMeal = {
+      id: crypto.randomUUID(),
+      title,
+      type: manualMealDraft.slot,
+      scheduledFor: manualMealDraft.slot,
+      description: manualMealDraft.note.trim() || 'Manual meal entry.',
+      isRecipe: false,
+      expiringItemsUsed: [],
+      source: 'manual',
+    };
+
+    setPlans((current) => {
+      const existing = current[manualMealDraft.date] || [];
+      return { ...current, [manualMealDraft.date]: [...existing, manualMeal] };
+    });
+    setManualMealOpen(false);
+    setManualMealDraft({ title: '', date: selectedDate, slot: 'Dinner', note: '' });
+  };
+
+  const rescheduleMeal = (meal: AssignedMeal, oldDate: string, newDate: string, slot: MealSlot) => {
+    setPlans((current) => {
+      const updatedMeal = { ...meal, scheduledFor: slot };
+      if (oldDate === newDate) {
+        return {
+          ...current,
+          [oldDate]: (current[oldDate] || []).map((entry) => (entry.id === meal.id ? updatedMeal : entry)),
+        };
+      }
       const oldList = (current[oldDate] || []).filter((entry) => entry.id !== meal.id);
       const newList = (current[newDate] || []).some((entry) => entry.id === meal.id)
-        ? current[newDate] || []
-        : [...(current[newDate] || []), meal];
+        ? (current[newDate] || []).map((entry) => (entry.id === meal.id ? updatedMeal : entry))
+        : [...(current[newDate] || []), updatedMeal];
       return { ...current, [oldDate]: oldList, [newDate]: newList };
     });
-    setMealToReschedule(null);
+    setScheduleState(null);
   };
 
   const removeFromPlan = (date: string, mealId: string) => {
@@ -286,10 +357,15 @@ const MealPlanner: React.FC = () => {
               title="Schedule meals"
               
               action={
-                <PrimaryButton type="button" onClick={() => void generatePlanBank()} disabled={activeGenerator === 'plan'}>
-                  {activeGenerator === 'plan' ? <Loader2 size={18} className="animate-spin" /> : <RefreshCw size={16} />}
-                  {activeGenerator === 'plan' ? 'Refreshing' : 'Refresh plan bank'}
-                </PrimaryButton>
+                <div className="flex flex-wrap gap-2">
+                  <SecondaryButton type="button" onClick={openManualMeal}>
+                    Manual meal
+                  </SecondaryButton>
+                  <PrimaryButton type="button" onClick={() => void generatePlanBank()} disabled={activeGenerator === 'plan'}>
+                    {activeGenerator === 'plan' ? <Loader2 size={18} className="animate-spin" /> : <RefreshCw size={16} />}
+                    {activeGenerator === 'plan' ? 'Refreshing' : 'Refresh plan bank'}
+                  </PrimaryButton>
+                </div>
               }
             />
 
@@ -318,7 +394,12 @@ const MealPlanner: React.FC = () => {
               {assignedMeals.length === 0 ? (
                 <EmptyState
                   title="Nothing scheduled for this day"
-                  description="Assign a plan-bank meal to this date."
+                  description="Assign a plan-bank meal or add one manually."
+                  action={
+                    <SecondaryButton type="button" onClick={openManualMeal}>
+                      Manual meal
+                    </SecondaryButton>
+                  }
                 />
               ) : (
                 <div className="space-y-3">
@@ -329,7 +410,10 @@ const MealPlanner: React.FC = () => {
                           <div className="flex flex-wrap items-center gap-2">
                             <h3 className="text-base font-semibold text-neutral-950">{meal.title}</h3>
                             <span className="rounded-full border border-neutral-300 px-2.5 py-1 text-[11px] text-neutral-500">
-                              {meal.type}
+                              {meal.scheduledFor ?? meal.type}
+                            </span>
+                            <span className="rounded-full border border-neutral-300 px-2.5 py-1 text-[11px] text-neutral-500">
+                              {meal.source === 'manual' ? 'Manual' : 'Planned'}
                             </span>
                           </div>
                           <p className="text-sm text-neutral-600">{meal.description}</p>
@@ -344,7 +428,15 @@ const MealPlanner: React.FC = () => {
                           </SecondaryButton>
                           <SecondaryButton
                             type="button"
-                            onClick={() => setMealToReschedule({ meal, currentDate: selectedDate })}
+                            onClick={() =>
+                              setScheduleState({
+                                meal,
+                                mode: 'move',
+                                currentDate: selectedDate,
+                                selectedDate,
+                                selectedSlot: meal.scheduledFor ?? meal.type,
+                              })
+                            }
                             className="w-full px-3 py-2 sm:w-auto"
                           >
                             Move
@@ -408,7 +500,18 @@ const MealPlanner: React.FC = () => {
                         <SecondaryButton type="button" onClick={() => setSelectedMeal(meal)} className="w-full px-3 py-2 sm:w-auto">
                           View
                         </SecondaryButton>
-                        <PrimaryButton type="button" onClick={() => setPlanIdeaToSchedule(meal)} className="w-full px-3 py-2 sm:w-auto">
+                        <PrimaryButton
+                          type="button"
+                          onClick={() =>
+                            setScheduleState({
+                              meal,
+                              mode: 'schedule',
+                              selectedDate,
+                              selectedSlot: meal.type,
+                            })
+                          }
+                          className="w-full px-3 py-2 sm:w-auto"
+                        >
                           <CalendarDays size={16} />
                           Schedule
                         </PrimaryButton>
@@ -611,36 +714,160 @@ const MealPlanner: React.FC = () => {
       </SurfaceSheet>
 
       <SurfaceSheet
-        open={Boolean(planIdeaToSchedule || mealToReschedule)}
-        onClose={() => {
-          setPlanIdeaToSchedule(null);
-          setMealToReschedule(null);
-        }}
-        title={planIdeaToSchedule ? 'Schedule meal' : 'Move meal'}
+        open={manualMealOpen}
+        onClose={() => setManualMealOpen(false)}
+        title="Manual meal"
+        description="Add a meal directly to your schedule."
+      >
+        <div className="space-y-4">
+          <label className="block space-y-2">
+            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">Meal name</span>
+            <input
+              aria-label="Meal name"
+              value={manualMealDraft.title}
+              onChange={(event) => setManualMealDraft((current) => ({ ...current, title: event.target.value }))}
+              placeholder="e.g. Friday taco night"
+              className="w-full rounded-3xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none transition focus:border-neutral-950"
+            />
+          </label>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="block space-y-2">
+              <span className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">Date</span>
+              <select
+                aria-label="Date"
+                value={manualMealDraft.date}
+                onChange={(event) => setManualMealDraft((current) => ({ ...current, date: event.target.value }))}
+                className="w-full rounded-3xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none transition focus:border-neutral-950"
+              >
+                {dates.map((date) => (
+                  <option key={date} value={date}>
+                    {new Date(date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="block space-y-2">
+              <span className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">Meal slot</span>
+              <select
+                aria-label="Meal slot"
+                value={manualMealDraft.slot}
+                onChange={(event) =>
+                  setManualMealDraft((current) => ({ ...current, slot: event.target.value as MealSlot }))
+                }
+                className="w-full rounded-3xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none transition focus:border-neutral-950"
+              >
+                {MEAL_SLOTS.map((slot) => (
+                  <option key={slot} value={slot}>
+                    {slot}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <label className="block space-y-2">
+            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">Notes</span>
+            <textarea
+              aria-label="Notes"
+              value={manualMealDraft.note}
+              onChange={(event) => setManualMealDraft((current) => ({ ...current, note: event.target.value }))}
+              placeholder="Optional note for the meal."
+              className="min-h-[96px] w-full rounded-3xl border border-neutral-200 bg-neutral-50 px-4 py-3 outline-none transition focus:border-neutral-950"
+            />
+          </label>
+
+          <div className="flex flex-wrap gap-2">
+            <PrimaryButton type="button" onClick={saveManualMeal} disabled={!manualMealDraft.title.trim()}>
+              Save meal
+            </PrimaryButton>
+            <SecondaryButton type="button" onClick={() => setManualMealOpen(false)}>
+              Cancel
+            </SecondaryButton>
+          </div>
+        </div>
+      </SurfaceSheet>
+
+      <SurfaceSheet
+        open={Boolean(scheduleState)}
+        onClose={() => setScheduleState(null)}
+        title={scheduleState?.mode === 'move' ? 'Move meal' : 'Schedule meal'}
         description={
-          planIdeaToSchedule
-            ? `Place ${planIdeaToSchedule.title} on a day.`
-            : mealToReschedule
-              ? `Move ${mealToReschedule.meal.title} to another day.`
-              : undefined
+          scheduleState
+            ? `${scheduleState.mode === 'move' ? 'Place' : 'Add'} ${scheduleState.meal.title} on a day and meal slot.`
+            : undefined
         }
       >
-        <div className="grid gap-2 sm:grid-cols-2">
-          {dates.map((date) => (
-            <SecondaryButton
-              key={date}
-              type="button"
-              onClick={() =>
-                planIdeaToSchedule
-                  ? schedulePlanIdea(planIdeaToSchedule, date)
-                  : rescheduleMeal(mealToReschedule!.meal, mealToReschedule!.currentDate, date)
-              }
-            >
-              <CalendarDays size={16} />
-              {new Date(date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-            </SecondaryButton>
-          ))}
-        </div>
+        {scheduleState ? (
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <span className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">Meal slot</span>
+              <div className="flex flex-wrap gap-2">
+                {MEAL_SLOTS.map((slot) => (
+                  <button
+                    key={slot}
+                    type="button"
+                    onClick={() => setScheduleState((current) => (current ? { ...current, selectedSlot: slot } : current))}
+                    className={cx(
+                      'rounded-full border px-3 py-2 text-sm transition',
+                      scheduleState.selectedSlot === slot
+                        ? 'border-neutral-950 bg-transparent text-neutral-950'
+                        : 'border-neutral-200 bg-white text-neutral-700',
+                    )}
+                  >
+                    {slot}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <span className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">Date</span>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {dates.map((date) => (
+                  <button
+                    key={date}
+                    type="button"
+                    onClick={() => setScheduleState((current) => (current ? { ...current, selectedDate: date } : current))}
+                    className={cx(
+                      'rounded-3xl border px-4 py-3 text-left transition',
+                      scheduleState.selectedDate === date
+                        ? 'border-neutral-950 bg-transparent text-neutral-950'
+                        : 'border-neutral-200 bg-white text-neutral-700',
+                    )}
+                  >
+                    <div className="flex items-center gap-2">
+                      <CalendarDays size={16} />
+                      {new Date(date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <PrimaryButton
+                type="button"
+                onClick={() =>
+                  scheduleState.mode === 'schedule'
+                    ? schedulePlanIdea(scheduleState.meal as PlanIdea, scheduleState.selectedDate, scheduleState.selectedSlot)
+                    : rescheduleMeal(
+                        scheduleState.meal as AssignedMeal,
+                        scheduleState.currentDate!,
+                        scheduleState.selectedDate,
+                        scheduleState.selectedSlot,
+                      )
+                }
+              >
+                {scheduleState.mode === 'move' ? 'Save move' : 'Save schedule'}
+              </PrimaryButton>
+              <SecondaryButton type="button" onClick={() => setScheduleState(null)}>
+                Cancel
+              </SecondaryButton>
+            </div>
+          </div>
+        ) : null}
       </SurfaceSheet>
     </div>
   );
@@ -682,11 +909,12 @@ function uniqueMeals<T extends MealSuggestion>(meals: T[]) {
   });
 }
 
-function toAssignedMeal(meal: PlanIdea, source: AssignedMeal['source']): AssignedMeal {
+function toAssignedMeal(meal: PlanIdea, source: AssignedMeal['source'], scheduledFor: MealSlot): AssignedMeal {
   return {
     id: meal.id,
     title: meal.title,
     type: meal.type,
+    scheduledFor,
     description: meal.description,
     isRecipe: meal.isRecipe,
     expiringItemsUsed: meal.expiringItemsUsed,
@@ -698,6 +926,10 @@ function toAssignedMeal(meal: PlanIdea, source: AssignedMeal['source']): Assigne
     flavorProfile: meal.flavorProfile,
     source,
   };
+}
+
+function mealSlotOrder(slot: MealSlot) {
+  return MEAL_SLOTS.indexOf(slot);
 }
 
 function buildMealHistorySummary(plans: Record<string, MealSuggestion[]>) {

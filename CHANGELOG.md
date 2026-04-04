@@ -4,6 +4,11 @@ All notable changes to this project should be documented in this file.
 
 This project starts versioning with Semantic Versioning.
 
+## [0.5.12] - 2026-04-04
+
+- Added a manual meal sheet to the `Plan` tab so users can add meals directly to a date without relying on the plan bank.
+- Updated meal scheduling and moving so both flows now choose a meal slot as well as a date, and persisted that slot on scheduled meals.
+
 ## [0.5.11] - 2026-03-31
 
 - Removed the last stale `api/_lib/openai` dependency, pointed the local Vite AI bridge at `api/ai.ts`, and deleted the unused helper file so Vercel POST requests no longer fail looking for a missing runtime module.

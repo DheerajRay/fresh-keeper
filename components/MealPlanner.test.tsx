@@ -109,12 +109,34 @@ describe('MealPlanner', () => {
 
     expect(await screen.findByText('Spinach Egg Bowl')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /Schedule/i }));
-    await user.click(screen.getAllByRole('button', { name: /, /i })[0]);
+    await user.click(screen.getByRole('button', { name: /Save schedule/i }));
 
     await waitFor(() => {
       const savedPlans = JSON.parse(localStorage.getItem('freshkeeper_meal_plans') || '{}');
       const today = new Date().toISOString().split('T')[0];
-      expect(savedPlans[today]?.some((meal: { title: string }) => meal.title === 'Spinach Egg Bowl')).toBe(true);
+      expect(savedPlans[today]?.some((meal: { title: string; scheduledFor?: string }) => meal.title === 'Spinach Egg Bowl' && meal.scheduledFor === 'Lunch')).toBe(true);
+    });
+  });
+
+  it('lets the user add a manual meal directly into the schedule', async () => {
+    const user = userEvent.setup();
+    render(<MealPlanner />);
+
+    await user.click(screen.getAllByRole('button', { name: /Manual meal/i })[0]);
+    await user.type(screen.getByPlaceholderText(/Friday taco night/i), 'Homemade ramen');
+    await user.selectOptions(screen.getByLabelText(/Meal slot/i), 'Dinner');
+    await user.type(screen.getByPlaceholderText(/Optional note for the meal/i), 'Use the good broth.');
+    await user.click(screen.getByRole('button', { name: /Save meal/i }));
+
+    await waitFor(() => {
+      const savedPlans = JSON.parse(localStorage.getItem('freshkeeper_meal_plans') || '{}');
+      const today = new Date().toISOString().split('T')[0];
+      expect(
+        savedPlans[today]?.some(
+          (meal: { title: string; source?: string; scheduledFor?: string }) =>
+            meal.title === 'Homemade ramen' && meal.source === 'manual' && meal.scheduledFor === 'Dinner',
+        ),
+      ).toBe(true);
     });
   });
 
@@ -204,14 +226,19 @@ describe('MealPlanner', () => {
 
     expect(screen.getByText('Tomato Pasta')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /^Move$/i }));
-    await user.click(
-      screen.getByRole('button', {
-        name: new Date(tomorrow).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
-      }),
-    );
+    await user.click(screen.getByRole('button', { name: /^Lunch$/i }));
+    const moveDateButtons = screen.getAllByRole('button', {
+      name: new Date(tomorrow).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+    });
+    await user.click(moveDateButtons[moveDateButtons.length - 1]);
+    await user.click(screen.getByRole('button', { name: /Save move/i }));
 
     const savedPlans = JSON.parse(localStorage.getItem('freshkeeper_meal_plans') || '{}');
     expect(savedPlans[today] || []).toHaveLength(0);
-    expect(savedPlans[tomorrow]?.some((meal: { title: string }) => meal.title === 'Tomato Pasta')).toBe(true);
+    expect(
+      savedPlans[tomorrow]?.some(
+        (meal: { title: string; scheduledFor?: string }) => meal.title === 'Tomato Pasta' && meal.scheduledFor === 'Lunch',
+      ),
+    ).toBe(true);
   });
 });
