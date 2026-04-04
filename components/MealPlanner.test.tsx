@@ -143,6 +143,7 @@ describe('MealPlanner', () => {
 
     render(<MealPlanner />);
 
+    await openCollapsibleSection(user, /Plan bank/i);
     expect(await screen.findByText('Spinach Egg Bowl')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /Schedule/i }));
     await user.click(screen.getByRole('button', { name: /Save schedule/i }));
@@ -241,6 +242,7 @@ describe('MealPlanner', () => {
     await user.type(screen.getByPlaceholderText(/Healthy Japanese dinner/i), 'comforting');
     await user.click(screen.getByRole('button', { name: /Generate meal ideas/i }));
 
+    await openCollapsibleSection(user, /Discover bank/i);
     expect(await screen.findByText('Miso Noodle Bowl')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /Add missing/i }));
     expect(await screen.findByText(/Missing for Miso Noodle Bowl/i)).toBeInTheDocument();
@@ -300,7 +302,27 @@ describe('MealPlanner', () => {
   });
 
   it('shows direct consume suggestions for ready-to-eat items nearing expiry', async () => {
-    vi.mocked(getPlanMealIdeas).mockResolvedValue([]);
+    const user = userEvent.setup();
+    vi.mocked(getPlanMealIdeas).mockResolvedValue([
+      {
+        id: 'plan-delete-1',
+        title: 'Spinach Egg Bowl',
+        type: 'Lunch',
+        description: 'Uses your eggs and spinach.',
+        isRecipe: true,
+        expiringItemsUsed: ['spinach'],
+        prepTime: '15 min',
+        difficulty: 'Easy',
+        flavorProfile: 'Savory',
+        chefTip: 'Season at the end.',
+        inventoryMatchScore: 100,
+        missingIngredientCount: 0,
+        ingredients: [
+          { name: 'Eggs', amount: '2', inInventory: true },
+          { name: 'Spinach', amount: '1 cup', inInventory: true },
+        ],
+      },
+    ] as any);
 
     localStorage.setItem(
       'fridge_inventory',
@@ -331,7 +353,28 @@ describe('MealPlanner', () => {
     render(<MealPlanner />);
 
     expect(await screen.findByText(/Consume soon/i)).toBeInTheDocument();
+    await openCollapsibleSection(user, /Consume soon/i);
     expect(screen.getByText('Fried Rice')).toBeInTheDocument();
     expect(screen.getByText('Mango')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /Dismiss Fried Rice from consume soon/i }));
+    expect(screen.queryByText('Fried Rice')).not.toBeInTheDocument();
+
+    await openCollapsibleSection(user, /Plan bank/i);
+    expect(await screen.findByText('Spinach Egg Bowl')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Remove Spinach Egg Bowl from plan bank/i }));
+    expect(screen.queryByText('Spinach Egg Bowl')).not.toBeInTheDocument();
   });
 });
+
+async function openCollapsibleSection(user: ReturnType<typeof userEvent.setup>, name: RegExp) {
+  const toggle = screen
+    .getAllByRole('button', { name })
+    .find((button) => button.hasAttribute('aria-expanded'));
+
+  if (!toggle) {
+    throw new Error(`Could not find collapsible section toggle for ${name.toString()}.`);
+  }
+
+  await user.click(toggle);
+}

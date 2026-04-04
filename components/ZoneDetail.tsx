@@ -8,7 +8,7 @@ interface ZoneDetailProps {
 }
 
 const ZoneDetail: React.FC<ZoneDetailProps> = ({ data }) => {
-  const [openSection, setOpenSection] = useState<'bestFor' | 'tips'>('bestFor');
+  const [openSection, setOpenSection] = useState<'bestFor' | 'tips' | null>(null);
 
   return (
     <Panel className="overflow-hidden">
@@ -34,7 +34,7 @@ const ZoneDetail: React.FC<ZoneDetailProps> = ({ data }) => {
             <div key={sectionKey} className="border-b border-neutral-200 last:border-b-0">
               <button
                 type="button"
-                onClick={() => setOpenSection(sectionKey)}
+                onClick={() => setOpenSection((current) => (current === sectionKey ? null : sectionKey))}
                 className="flex w-full items-center justify-between px-3 py-4 text-left"
               >
                 <span className="text-sm font-semibold text-neutral-900">{label}</span>

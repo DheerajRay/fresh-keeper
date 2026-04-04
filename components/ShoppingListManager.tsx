@@ -58,7 +58,7 @@ const ShoppingListManager: React.FC = () => {
   const [newShopType, setNewShopType] = useState<StoreType>('grocery');
   const [hasTouchedShopType, setHasTouchedShopType] = useState(false);
   const [remoteHydrated, setRemoteHydrated] = useState(false);
-  const [openStoreType, setOpenStoreType] = useState<StoreType | null>('grocery');
+  const [openStoreType, setOpenStoreType] = useState<StoreType | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -118,12 +118,6 @@ const ShoppingListManager: React.FC = () => {
       })),
     [shoppingList, shops],
   );
-
-  useEffect(() => {
-    if (groupedShoppingList.some((group) => group.type === openStoreType && group.stores.length > 0)) return;
-    const firstWithItems = groupedShoppingList.find((group) => group.stores.length > 0);
-    setOpenStoreType(firstWithItems?.type || null);
-  }, [groupedShoppingList, openStoreType]);
 
   const handleGenerateSuggestions = async () => {
     const inventory: InventoryItem[] = getLocalInventory();

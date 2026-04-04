@@ -1,5 +1,5 @@
 ﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { CalendarDays, ChevronDown, Eye, Loader2, Plus, RefreshCw, ShoppingCart, Trash2 } from 'lucide-react';
+import { CalendarDays, Eye, Loader2, Plus, RefreshCw, ShoppingCart, Trash2 } from 'lucide-react';
 import { DEFAULT_SHOPS, DIETARY_OPTIONS } from '../constants';
 import {
   AssignedMeal,
@@ -33,6 +33,7 @@ import {
 } from '../lib/appData';
 import { classifyShoppingItemStoreType, ensureDefaultShops, getDefaultShopForType } from '../lib/storeRouting';
 import {
+  CollapsibleSection,
   EmptyState,
   FloatingActionButton,
   IconButton,
@@ -97,11 +98,13 @@ type PlannerSectionKey = 'consumeSoon' | 'planBank' | 'discoverBank';
 
 type ConsumeSoonIdea = {
   id: string;
+  itemId: string;
   title: string;
   kind: 'leftover' | 'fruit' | 'drink' | 'snack' | 'dessert' | 'side';
   urgency: string;
   suggestion: string;
   expiryDate: number;
+  slot: MealSlot;
 };
 
 const DIRECT_CONSUME_KEYWORDS = {
@@ -163,10 +166,11 @@ const MealPlanner: React.FC = () => {
   const [manualMealLoading, setManualMealLoading] = useState(false);
   const [missingReview, setMissingReview] = useState<MissingReviewState | null>(null);
   const [openSections, setOpenSections] = useState<Record<PlannerSectionKey, boolean>>({
-    consumeSoon: true,
-    planBank: true,
-    discoverBank: true,
+    consumeSoon: false,
+    planBank: false,
+    discoverBank: false,
   });
+  const [dismissedConsumeSoonIds, setDismissedConsumeSoonIds] = useState<string[]>([]);
   const [craving, setCraving] = useState('');
   const [selectedRestrictions, setSelectedRestrictions] = useState<DietaryRestriction[]>(() => getLocalDietaryRestrictions());
   const [remoteHydrated, setRemoteHydrated] = useState(false);
@@ -226,7 +230,10 @@ const MealPlanner: React.FC = () => {
   const inventory = getInventory();
   const historySummary = useMemo(() => buildMealHistorySummary(plans), [plans]);
   const planBank = useMemo(() => enrichMeals((plans[PLAN_BANK_KEY] || []) as PlanIdea[], inventory) as PlanIdea[], [inventory, plans]);
-  const consumeSoonIdeas = useMemo(() => buildConsumeSoonIdeas(inventory), [inventory]);
+  const consumeSoonIdeas = useMemo(
+    () => buildConsumeSoonIdeas(inventory).filter((idea) => !dismissedConsumeSoonIds.includes(idea.itemId)),
+    [dismissedConsumeSoonIds, inventory],
+  );
   const assignedMeals = useMemo(
     () =>
       (enrichMeals((plans[selectedDate] || []) as AssignedMeal[], inventory) as AssignedMeal[]).sort(
@@ -393,6 +400,38 @@ const MealPlanner: React.FC = () => {
 
   const removeFromDiscover = (mealId: string) => {
     setDiscoverQueue((current) => current.filter((meal) => meal.id !== mealId));
+  };
+
+  const removeFromPlanBank = (mealId: string) => {
+    setPlans((current) => ({
+      ...current,
+      [PLAN_BANK_KEY]: (current[PLAN_BANK_KEY] || []).filter((meal) => meal.id !== mealId),
+    }));
+  };
+
+  const scheduleConsumeSoonIdea = (idea: ConsumeSoonIdea) => {
+    setScheduleState({
+      meal: {
+        id: `consume-${idea.itemId}`,
+        title: idea.title,
+        type: idea.slot,
+        description: idea.suggestion,
+        isRecipe: false,
+        expiringItemsUsed: [idea.title],
+        prepTime: 'Ready now',
+        difficulty: 'Easy',
+        inventoryMatchScore: 100,
+        missingIngredientCount: 0,
+        source: 'plan_bank',
+      } as PlanIdea,
+      mode: 'schedule',
+      selectedDate,
+      selectedSlot: idea.slot,
+    });
+  };
+
+  const removeConsumeSoonIdea = (itemId: string) => {
+    setDismissedConsumeSoonIds((current) => (current.includes(itemId) ? current : [...current, itemId]));
   };
 
   const openDiscoverIngredientsReview = (meal: DiscoveredMeal) => {
@@ -577,7 +616,7 @@ const MealPlanner: React.FC = () => {
 
           {consumeSoonIdeas.length > 0 ? (
             <Panel className="p-4 md:p-5">
-              <CollapsibleMealSection
+              <CollapsibleSection
                 title="Consume soon"
                 badge={`${consumeSoonIdeas.length}`}
                 open={openSections.consumeSoon}
@@ -586,29 +625,51 @@ const MealPlanner: React.FC = () => {
                 <div className="mt-6 grid gap-3">
                   {consumeSoonIdeas.map((idea) => (
                     <div key={idea.id} className="border border-neutral-200 bg-white px-4 py-4">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-base font-semibold text-neutral-950">{idea.title}</h3>
-                        <span className="rounded-full border border-neutral-300 px-2.5 py-1 text-[11px] text-neutral-500">
-                          {CONSUME_KIND_LABELS[idea.kind]}
-                        </span>
-                        <span className="rounded-full border border-neutral-300 px-2.5 py-1 text-[11px] text-neutral-500">
-                          {idea.urgency}
-                        </span>
+                      <div className="space-y-3">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="text-base font-semibold text-neutral-950">{idea.title}</h3>
+                          <span className="rounded-full border border-neutral-300 px-2.5 py-1 text-[11px] text-neutral-500">
+                            {CONSUME_KIND_LABELS[idea.kind]}
+                          </span>
+                          <span className="rounded-full border border-neutral-300 px-2.5 py-1 text-[11px] text-neutral-500">
+                            {idea.urgency}
+                          </span>
+                        </div>
+                        <p className="text-sm leading-6 text-neutral-600">{idea.suggestion}</p>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <PrimaryButton type="button" onClick={() => scheduleConsumeSoonIdea(idea)} className="min-h-[40px] px-3 py-2">
+                            <CalendarDays size={15} />
+                            <span>Schedule</span>
+                          </PrimaryButton>
+                          <IconButton
+                            type="button"
+                            onClick={() => removeConsumeSoonIdea(idea.itemId)}
+                            className="min-h-[40px] px-3 py-2"
+                            aria-label={`Dismiss ${idea.title} from consume soon`}
+                          >
+                            <Trash2 size={15} />
+                          </IconButton>
+                        </div>
                       </div>
-                      <p className="mt-3 text-sm leading-6 text-neutral-600">{idea.suggestion}</p>
                     </div>
                   ))}
                 </div>
-              </CollapsibleMealSection>
+              </CollapsibleSection>
             </Panel>
           ) : null}
 
           <Panel className="p-4 md:p-5">
-            <CollapsibleMealSection
+            <CollapsibleSection
               title="Plan bank"
               badge={`${planBank.length}`}
               open={openSections.planBank}
               onToggle={() => toggleSection('planBank')}
+              action={
+                <SecondaryButton type="button" onClick={() => void generatePlanBank()} disabled={activeGenerator === 'plan'} className="min-h-[40px] px-3 py-2">
+                  {activeGenerator === 'plan' ? <Loader2 size={15} className="animate-spin" /> : <RefreshCw size={15} />}
+                  <span>{activeGenerator === 'plan' ? 'Refreshing' : 'Refresh'}</span>
+                </SecondaryButton>
+              }
             >
               <div className="mt-6 space-y-3">
                 {planBank.length === 0 ? (
@@ -662,13 +723,21 @@ const MealPlanner: React.FC = () => {
                             <CalendarDays size={15} />
                             <span>Schedule</span>
                           </PrimaryButton>
+                          <IconButton
+                            type="button"
+                            onClick={() => removeFromPlanBank(meal.id)}
+                            className="min-h-[40px] px-3 py-2"
+                            aria-label={`Remove ${meal.title} from plan bank`}
+                          >
+                            <Trash2 size={15} />
+                          </IconButton>
                         </div>
                       </div>
                     </div>
                   ))
                 )}
               </div>
-            </CollapsibleMealSection>
+            </CollapsibleSection>
           </Panel>
         </div>
       ) : (
@@ -731,7 +800,7 @@ const MealPlanner: React.FC = () => {
           </Panel>
 
           <Panel className="p-4 md:p-5">
-            <CollapsibleMealSection
+            <CollapsibleSection
               title="Discover bank"
               badge={`${discoverQueue.length}`}
               open={openSections.discoverBank}
@@ -796,7 +865,7 @@ const MealPlanner: React.FC = () => {
                   })
                 )}
               </div>
-            </CollapsibleMealSection>
+            </CollapsibleSection>
           </Panel>
         </div>
       )}
@@ -1326,11 +1395,13 @@ export function buildConsumeSoonIdeas(inventory: InventoryItem[]): ConsumeSoonId
 
       return {
         id: `consume-${item.id}`,
+        itemId: item.id,
         title: item.name,
         kind,
         urgency: daysLeft === 0 ? 'Use today' : `${daysLeft} day${daysLeft === 1 ? '' : 's'} left`,
         suggestion: buildConsumeSoonSuggestion(kind),
         expiryDate: item.expiryDate,
+        slot: consumeIdeaSlot(kind),
       } as ConsumeSoonIdea;
     })
     .filter((idea): idea is ConsumeSoonIdea => Boolean(idea))
@@ -1440,6 +1511,21 @@ function buildConsumeSoonSuggestion(kind: ConsumeSoonIdea['kind']) {
   }
 }
 
+function consumeIdeaSlot(kind: ConsumeSoonIdea['kind']): MealSlot {
+  switch (kind) {
+    case 'fruit':
+      return 'Breakfast';
+    case 'drink':
+    case 'snack':
+    case 'dessert':
+      return 'Snack';
+    case 'side':
+      return 'Lunch';
+    case 'leftover':
+      return 'Dinner';
+  }
+}
+
 function consumeKindPriority(kind: ConsumeSoonIdea['kind']) {
   switch (kind) {
     case 'leftover':
@@ -1456,38 +1542,6 @@ function consumeKindPriority(kind: ConsumeSoonIdea['kind']) {
       return 5;
   }
 }
-
-const CollapsibleMealSection: React.FC<{
-  title: string;
-  badge?: string;
-  open: boolean;
-  onToggle: () => void;
-  action?: React.ReactNode;
-  children: React.ReactNode;
-}> = ({ title, badge, open, onToggle, action, children }) => (
-  <div className="space-y-4">
-    <div className="flex items-center gap-3">
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-expanded={open}
-        className="flex min-w-0 flex-1 items-center justify-between gap-3 rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-left transition hover:border-neutral-300"
-      >
-        <div className="flex min-w-0 items-center gap-3">
-          <h2 className="text-base font-semibold uppercase tracking-[0.14em] text-neutral-950">{title}</h2>
-          {badge ? (
-            <span className="rounded-full border border-neutral-300 px-2.5 py-1 text-[11px] text-neutral-500">
-              {badge}
-            </span>
-          ) : null}
-        </div>
-        <ChevronDown size={16} className={cx('shrink-0 transition', open && 'rotate-180')} />
-      </button>
-      {action ? <div className="shrink-0">{action}</div> : null}
-    </div>
-    {open ? children : null}
-  </div>
-);
 
 export default MealPlanner;
 

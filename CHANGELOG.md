@@ -4,6 +4,12 @@ All notable changes to this project should be documented in this file.
 
 This project starts versioning with Semantic Versioning.
 
+## [0.5.21] - 2026-04-04
+
+- Converted `Inventory list` into the same shared collapsible section style used by the planner banks so the fridge screen follows the same section pattern.
+- Changed all current accordion-style sections to start closed on init, including meal planner banks, the inventory list, shopping store-routing groups, and guide zone detail subsections.
+- Moved the collapsible section header into the shared UI layer and updated the affected component tests to open sections explicitly.
+
 ## [0.5.20] - 2026-04-04
 
 - Turned `Consume soon`, `Plan bank`, and `Discover bank` into collapsible meal-planner sections so users can shorten the page and open only the bank they need.

@@ -18,6 +18,7 @@ describe('ShoppingListManager', () => {
     await user.type(screen.getByPlaceholderText(/Milk, apples/i), 'Matcha powder');
     await user.click(screen.getByRole('button', { name: /^Add$/i }));
 
+    await user.click(screen.getByRole('button', { name: /Amazon \/ Specialty\s*1 item/i }));
     expect(await screen.findByText('Matcha powder')).toBeInTheDocument();
     expect(screen.getAllByText(/Amazon \/ Specialty/i).length).toBeGreaterThan(0);
 
@@ -34,6 +35,7 @@ describe('ShoppingListManager', () => {
     await user.click(screen.getByRole('button', { name: /^Mall$/i }));
     await user.click(screen.getByRole('button', { name: /Save changes/i }));
 
+    await user.click(screen.getByRole('button', { name: /Mall\s*1 item/i }));
     expect(await screen.findByText('Bulk Rice')).toBeInTheDocument();
     const savedList = JSON.parse(localStorage.getItem('freshkeeper_shopping_list') || '[]');
     expect(savedList[0]).toEqual(
@@ -166,6 +168,7 @@ describe('ShoppingListManager', () => {
     expect(await screen.findByText('Lettuce')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /Add all/i }));
 
+    await user.click(screen.getByRole('button', { name: /Grocery\s*1 item/i }));
     await user.click(screen.getByRole('button', { name: /Mark Lettuce as checked/i }));
     await user.click(screen.getByRole('button', { name: /Clear checked/i }));
     await user.click(screen.getByRole('button', { name: /Mall\s*1 items/i }));

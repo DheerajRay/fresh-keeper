@@ -46,6 +46,7 @@ describe('InventoryManager', () => {
     const user = userEvent.setup();
 
     render(<InventoryManager />);
+    await openInventoryList(user);
 
     await user.click(screen.getByRole('button', { name: /add to fridge/i }));
     await user.type(screen.getByPlaceholderText(/Eggs, basil/i), 'Milk');
@@ -58,6 +59,24 @@ describe('InventoryManager', () => {
 
     await waitFor(() => {
       expect(screen.queryByText('Milk')).not.toBeInTheDocument();
+    });
+  });
+
+  it('removes an item directly from the inventory card', async () => {
+    const user = userEvent.setup();
+
+    render(<InventoryManager />);
+    await openInventoryList(user);
+
+    await user.click(screen.getByRole('button', { name: /add to fridge/i }));
+    await user.type(screen.getByPlaceholderText(/Eggs, basil/i), 'Juice');
+    await user.click(screen.getByRole('button', { name: /save item/i }));
+
+    expect(await screen.findByText('Juice')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Remove Juice/i }));
+
+    await waitFor(() => {
+      expect(screen.queryByText('Juice')).not.toBeInTheDocument();
     });
   });
 
@@ -184,6 +203,7 @@ describe('InventoryManager', () => {
     expect(await screen.findByText(/Potential spoilage detected/i)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /Add anyway/i }));
 
+    await openInventoryList(user);
     expect(await screen.findByText('Old fish')).toBeInTheDocument();
   });
 
@@ -197,6 +217,7 @@ describe('InventoryManager', () => {
     });
 
     render(<InventoryManager />);
+    await openInventoryList(user);
 
     await user.click(screen.getByRole('button', { name: /add to fridge/i }));
     await user.type(screen.getByPlaceholderText(/Eggs, basil/i), 'Bread');
@@ -224,6 +245,7 @@ describe('InventoryManager', () => {
     const user = userEvent.setup();
 
     render(<InventoryManager />);
+    await openInventoryList(user);
 
     await user.click(screen.getByRole('button', { name: /add to fridge/i }));
     await user.click(screen.getByLabelText(/close panel/i));
@@ -291,4 +313,8 @@ function mockScanningPrimitives() {
   }
 
   vi.stubGlobal('FileReader', MockFileReader as unknown as typeof FileReader);
+}
+
+async function openInventoryList(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('button', { name: /Inventory list/i }));
 }

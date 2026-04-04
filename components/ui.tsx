@@ -40,6 +40,39 @@ export const SectionHeader: React.FC<{
   </div>
 );
 
+export const CollapsibleSection: React.FC<{
+  title: string;
+  badge?: React.ReactNode;
+  open: boolean;
+  onToggle: () => void;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+  className?: string;
+}> = ({ title, badge, open, onToggle, action, children, className }) => (
+  <div className={cx('space-y-4', className)}>
+    <div className="flex items-center gap-3">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className="flex min-w-0 flex-1 items-center justify-between gap-3 rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-left transition hover:border-neutral-300"
+      >
+        <div className="flex min-w-0 items-center gap-3">
+          <h2 className="text-base font-semibold uppercase tracking-[0.14em] text-neutral-950">{title}</h2>
+          {badge ? (
+            <span className="rounded-full border border-neutral-300 px-2.5 py-1 text-[11px] text-neutral-500">
+              {badge}
+            </span>
+          ) : null}
+        </div>
+        <ChevronDown size={16} className={cx('shrink-0 transition', open && 'rotate-180')} />
+      </button>
+      {action ? <div className="shrink-0">{action}</div> : null}
+    </div>
+    {open ? children : null}
+  </div>
+);
+
 export const Panel: React.FC<{
   children: React.ReactNode;
   className?: string;

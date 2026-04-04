@@ -21,16 +21,17 @@ import {
   setLocalInventory,
 } from '../lib/appData';
 import {
+  CollapsibleSection,
   ConfirmationDialog,
   EmptyState,
   FloatingActionButton,
+  IconButton,
   MobileStatsButton,
   PageHeader,
   Panel,
   PrimaryButton,
   SelectMenu,
   SecondaryButton,
-  SectionHeader,
   StatStrip,
   SurfaceSheet,
   cx,
@@ -80,6 +81,7 @@ const InventoryManager: React.FC = () => {
   const [showAddSheet, setShowAddSheet] = useState(false);
   const [showMapSheet, setShowMapSheet] = useState(false);
   const [activeItem, setActiveItem] = useState<InventoryItem | null>(null);
+  const [inventoryListOpen, setInventoryListOpen] = useState(false);
   const [warningData, setWarningData] = useState<WarningState | null>(null);
   const [remoteHydrated, setRemoteHydrated] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -353,67 +355,80 @@ const InventoryManager: React.FC = () => {
       </FloatingActionButton>
 
       <Panel className="p-4 md:p-5">
-        <SectionHeader
+        <CollapsibleSection
           title="Inventory list"
-        />
-
-        <div className="mt-5 space-y-5">
-          {groupedItems.length === 0 ? (
-            <EmptyState
-              title="No items tracked yet"
-              description="Add your first item to start shelf-life guidance, zone checks, and shopping history."
-              action={
-                <PrimaryButton type="button" onClick={() => setShowAddSheet(true)}>
-                  Add first item
-                </PrimaryButton>
-              }
-            />
-          ) : (
-            groupedItems.map((group) => (
-              <div key={group.zoneId} className="space-y-3">
-                <div className="flex items-center justify-between border-b border-neutral-200 pb-2">
-                  <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-neutral-500">
-                    {FRIDGE_ZONES[group.zoneId].name}
-                  </h2>
-                  <span className="text-xs text-neutral-500">{group.items.length} items</span>
-                </div>
-                <div className="space-y-3">
-                  {group.items.map((item) => (
-                    <div
-                      key={item.id}
-                    className="border border-neutral-200 bg-white px-4 py-4 transition hover:border-neutral-400"
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="space-y-2">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="text-base font-semibold text-neutral-950">{item.name}</h3>
-                            <span className="rounded-full border border-neutral-300 px-2.5 py-1 text-[11px] font-medium text-neutral-600">
-                              {formatQuantity(item.quantity, item.unit)}
-                            </span>
-                            <span className="rounded-full border border-neutral-300 px-2.5 py-1 text-[11px] text-neutral-500">
-                              {getStatus(item.expiryDate)}
-                            </span>
+          badge={items.length}
+          open={inventoryListOpen}
+          onToggle={() => setInventoryListOpen((current) => !current)}
+        >
+          <div className="mt-1 space-y-5">
+            {groupedItems.length === 0 ? (
+              <EmptyState
+                title="No items tracked yet"
+                description="Add your first item to start shelf-life guidance, zone checks, and shopping history."
+                action={
+                  <PrimaryButton type="button" onClick={() => setShowAddSheet(true)}>
+                    Add first item
+                  </PrimaryButton>
+                }
+              />
+            ) : (
+              groupedItems.map((group) => (
+                <div key={group.zoneId} className="space-y-3">
+                  <div className="flex items-center justify-between border-b border-neutral-200 pb-2">
+                    <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-neutral-500">
+                      {FRIDGE_ZONES[group.zoneId].name}
+                    </h2>
+                    <span className="text-xs text-neutral-500">{group.items.length} items</span>
+                  </div>
+                  <div className="space-y-3">
+                    {group.items.map((item) => (
+                      <div
+                        key={item.id}
+                        className="border border-neutral-200 bg-white px-4 py-4 transition hover:border-neutral-400"
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="space-y-2">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className="text-base font-semibold text-neutral-950">{item.name}</h3>
+                              <span className="rounded-full border border-neutral-300 px-2.5 py-1 text-[11px] font-medium text-neutral-600">
+                                {formatQuantity(item.quantity, item.unit)}
+                              </span>
+                              <span className="rounded-full border border-neutral-300 px-2.5 py-1 text-[11px] text-neutral-500">
+                                {getStatus(item.expiryDate)}
+                              </span>
+                            </div>
+                            <p className="text-xs uppercase tracking-[0.16em] text-neutral-500">{formatDaysLeft(item.expiryDate)}</p>
+                            {item.note ? <p className="max-w-2xl text-sm leading-6 text-neutral-600">{item.note}</p> : null}
                           </div>
-                          <p className="text-xs uppercase tracking-[0.16em] text-neutral-500">{formatDaysLeft(item.expiryDate)}</p>
-                          {item.note ? <p className="max-w-2xl text-sm leading-6 text-neutral-600">{item.note}</p> : null}
-                        </div>
 
-                        <button
-                          type="button"
-                          onClick={() => setActiveItem(item)}
-                          className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-3 py-2 text-sm font-medium text-neutral-800 transition hover:border-neutral-400"
-                        >
-                          Details
-                          <ChevronRight size={16} />
-                        </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setActiveItem(item)}
+                              className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-3 py-2 text-sm font-medium text-neutral-800 transition hover:border-neutral-400"
+                            >
+                              Details
+                              <ChevronRight size={16} />
+                            </button>
+                            <IconButton
+                              type="button"
+                              onClick={() => removeItem(item.id)}
+                              className="min-h-[40px] px-3 py-2"
+                              aria-label={`Remove ${item.name}`}
+                            >
+                              <Trash2 size={15} />
+                            </IconButton>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))
-          )}
-        </div>
+              ))
+            )}
+          </div>
+        </CollapsibleSection>
       </Panel>
 
       <SurfaceSheet

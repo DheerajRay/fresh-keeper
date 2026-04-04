@@ -11,6 +11,7 @@ describe('ZoneDetail', () => {
     render(<ZoneDetail data={FRIDGE_ZONES[ZoneId.LOWER_SHELVES]} />);
 
     expect(screen.getByText('Lower Shelves')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /What belongs here\?/i }));
     expect(screen.getByText('Raw Meat')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /Storage notes/i }));
